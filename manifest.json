@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "أداة التحضير التلقائي الموحدة",
+  "version": "1.0",
+  "description": "لوحة تحكم وتحضير آلي لمنصة مدرستي",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.madrasati.sa/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*.madrasati.sa/*"],
+      "js": ["content-prep.js"]
+    }
+  ]
+}
+
