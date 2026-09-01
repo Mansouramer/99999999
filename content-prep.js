@@ -1,12 +1,11 @@
 /**
  * ===================================================
- * أداة التحضير الذكية الشاملة - نسخة الاستقرار
+ * أداة جدول التحضير الشامل (الصفوف 1-6)
  * ===================================================
  */
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// تشغيل المحرك فوراً دون إبطاء
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPrepTool);
 } else {
@@ -14,208 +13,224 @@ if (document.readyState === 'loading') {
 }
 
 function initPrepTool() {
-    createFloatingControlUI();
+    createFullScheduleUI();
     runAutomationEngine();
 }
 
 /**
- * إنشاء الواجهة العائمة المباشرة
+ * إنشاء نافذة الجدول الشاملة
  */
-function createFloatingControlUI() {
-    if (document.getElementById('prep-floating-ui')) return;
+function createFullScheduleUI() {
+    if (document.getElementById('prep-schedule-ui')) return;
 
     const uiBox = document.createElement('div');
-    uiBox.id = 'prep-floating-ui';
+    uiBox.id = 'prep-schedule-ui';
     uiBox.style.cssText = `
-        position: fixed; top: 10px; left: 10px; z-index: 999999;
-        background: #ffffff; border: 2px solid #10b981; padding: 10px;
-        border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        font-family: system-ui, sans-serif; direction: rtl; width: 260px; text-align: center;
+        position: fixed; top: 20px; left: 5%; right: 5%; z-index: 999999;
+        background: #ffffff; border: 2px solid #10b981; padding: 15px;
+        border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.3);
+        font-family: system-ui, sans-serif; direction: rtl; max-height: 85vh; overflow-y: auto;
     `;
 
+    let optionsHTML = `
+        <option value="">-- (تلقائي) قراءة الدرس من مدرستي --</option>
+        <optgroup label="📘 علوم">
+            <option value="الطقس وفصول السنة">الطقس وفصول السنة</option>
+            <option value="المخلوقات الحية">المخلوقات الحية</option>
+            <option value="المادة وحالاتها">المادة وحالاتها</option>
+            <option value="الخلايا والأجهزة">الخلايا والأجهزة</option>
+        </optgroup>
+        <optgroup label="📐 رياضيات">
+            <option value="القيمة المنزلية">القيمة المنزلية</option>
+            <option value="الجمع والطرح">الجمع والطرح</option>
+            <option value="الضرب والقسمة">الضرب والقسمة</option>
+            <option value="الكسور والنسب">الكسور والنسب</option>
+        </optgroup>
+        <optgroup label="📗 لغتي">
+            <option value="حروفي وكلماتي">حروفي وكلماتي</option>
+            <option value="أسرتي ومدرستي">أسرتي ومدرستي</option>
+            <option value="قيم إسلامية ووطنية">قيم إسلامية ووطنية</option>
+        </optgroup>
+    `;
+
+    let rowsHTML = '';
+    for (let i = 1; i <= 7; i++) {
+        rowsHTML += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding:6px; font-weight:bold; font-size:12px;">الحصة ${i}</td>
+                <td style="padding:6px;">
+                    <select id="lesson_p${i}" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc;">
+                        ${optionsHTML}
+                    </select>
+                </td>
+                <td style="padding:6px;">
+                    <input type="url" id="enrichment_p${i}" placeholder="رابط إثراء (اختياري)" style="width:95%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc;" />
+                </td>
+            </tr>
+        `;
+    }
+
     uiBox.innerHTML = `
-        <div style="background: #10b981; color: #fff; padding: 4px; border-radius: 6px; margin-bottom: 8px; font-weight: bold; font-size: 12px;">
-            🤖 أداة التحضير الذكية (1-6)
+        <div style="display:flex; justify-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; color:#1e293b; font-size:15px;">📋 جدول تحديد الدروس والإثراءات للحصص</h3>
+            <button id="btnCloseUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق / إخفاء ✖</button>
         </div>
         
-        <select id="uiLessonSelect" style="width:100%; padding:6px; margin-bottom:6px; border-radius:6px; border:1px solid #ccc; font-size:11px; background:#fff;">
-            <option value="">-- (تلقائي) قراءة الدرس من مدرستي --</option>
-            <optgroup label="📘 علوم (1-6)">
-                <option value="الطقس وفصول السنة">الطقس وفصول السنة</option>
-                <option value="المخلوقات الحية">المخلوقات الحية</option>
-                <option value="المادة وحالاتها">المادة وحالاتها</option>
-                <option value="الخلايا والأجهزة">الخلايا والأجهزة</option>
-            </optgroup>
-            <optgroup label="📐 رياضيات (1-6)">
-                <option value="القيمة المنزلية">القيمة المنزلية</option>
-                <option value="الجمع والطرح">الجمع والطرح</option>
-                <option value="الضرب والقسمة">الضرب والقسمة</option>
-                <option value="الكسور والنسب">الكسور والنسب</option>
-            </optgroup>
-            <optgroup label="📗 لغتي (1-6)">
-                <option value="حروفي وكلماتي">حروفي وكلماتي</option>
-                <option value="أسرتي ومدرستي">أسرتي ومدرستي</option>
-                <option value="قيم إسلامية ووطنية">قيم إسلامية ووطنية</option>
-            </optgroup>
-        </select>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:10px; text-align:right;">
+            <thead>
+                <tr style="background:#f1f5f9; font-size:12px; color:#475569;">
+                    <th style="padding:6px; width:15%;">الحصة</th>
+                    <th style="padding:6px; width:45%;">الدرس المخصص</th>
+                    <th style="padding:6px; width:40%;">رابط الإثراء الخارجي</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHTML}
+            </tbody>
+        </table>
 
-        <input type="url" id="uiEnrichmentUrl" placeholder="🔗 رابط الإثراء (يوتيوب/عين/Drive)" style="width:92%; padding:5px; margin-bottom:6px; border-radius:6px; border:1px solid #ccc; font-size:11px;" />
-
-        <button id="btnAddBulkLessons" style="width:100%; padding:5px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px; margin-bottom:6px;">
-            ➕ إضافة دروس مخصصة
-        </button>
-
-        <select id="uiStrategySelect" style="width:100%; padding:5px; margin-bottom:8px; border-radius:6px; border:1px solid #ccc; font-size:11px;">
-            <option value="التعلم التعاوني">التعلم التعاوني</option>
-            <option value="العصف الذهني">العصف الذهني</option>
-            <option value="التفكير الناقد">التفكير الناقد</option>
-        </select>
-
-        <button id="btnTogglePrep" style="width:100%; padding:8px; background:#10b981; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">
-            بدء التحضير الشامل
-        </button>
-        
-        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b;">الحالة: متوقف</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button id="btnStartBulkPrep" style="flex:1; padding:10px; background:#10b981; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px;">
+                🚀 حفظ الجدول وبدء التحضير التلقائي
+            </button>
+            <button id="btnStopPrep" style="padding:10px; background:#ef4444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; display:none;">
+                ⏹ إيقاف
+            </button>
+        </div>
+        <div id="prepStatusText" style="margin-top:8px; font-size:11px; color:#64748b; text-align:center;">جاهز لإعداد جدول اليوم</div>
     `;
 
     document.body.appendChild(uiBox);
 
-    // إضافة دروس دفعة واحدة
-    document.getElementById('btnAddBulkLessons').addEventListener('click', () => {
-        const bulkInput = prompt("أدخل أسماء الدروس تفصل بينها فاصلة (,):");
-        if (bulkInput) {
-            const lessonSelect = document.getElementById('uiLessonSelect');
-            const lessonsList = bulkInput.split(',').map(l => l.trim()).filter(l => l.length > 0);
-            lessonsList.forEach(lesson => {
-                const opt = document.createElement('option');
-                opt.value = lesson;
-                opt.innerText = `📌 ${lesson}`;
-                lessonSelect.appendChild(opt);
-            });
-            alert(`✅ تم إضافة ${lessonsList.length} درس جديد!`);
-        }
+    document.getElementById('btnCloseUI').addEventListener('click', () => {
+        uiBox.style.display = 'none';
     });
 
-    chrome.storage.local.get(['autoPrepRunning'], (data) => updateUIStatus(data.autoPrepRunning));
+    document.getElementById('btnStartBulkPrep').addEventListener('click', () => {
+        let scheduleConfig = {};
+        for (let i = 1; i <= 7; i++) {
+            scheduleConfig[`p${i}`] = {
+                lesson: document.getElementById(`lesson_p${i}`).value,
+                enrichment: document.getElementById(`enrichment_p${i}`).value
+            };
+        }
 
-    document.getElementById('btnTogglePrep').addEventListener('click', () => {
-        chrome.storage.local.get(['autoPrepRunning'], (data) => {
-            const nextState = !data.autoPrepRunning;
-            const strategy = document.getElementById('uiStrategySelect').value;
-            const selectedLesson = document.getElementById('uiLessonSelect').value;
-            const enrichmentUrl = document.getElementById('uiEnrichmentUrl').value;
-
-            chrome.storage.local.set({
-                autoPrepRunning: nextState,
-                defaultStrategy: strategy,
-                selectedLesson: selectedLesson,
-                customEnrichmentUrl: enrichmentUrl
-            }, () => {
-                updateUIStatus(nextState);
-                if (nextState) {
-                    if (!window.location.href.includes("/Schedule")) {
-                        window.location.href = "https://schools.madrasati.sa/Teacher/Schedule";
-                    } else {
-                        window.location.reload();
-                    }
-                }
-            });
+        chrome.storage.local.set({
+            autoPrepRunning: true,
+            scheduleConfig: scheduleConfig,
+            currentPeriodIndex: 0
+        }, () => {
+            if (!window.location.href.includes("/Schedule")) {
+                window.location.href = "https://schools.madrasati.sa/Teacher/Schedule";
+            } else {
+                window.location.reload();
+            }
         });
+    });
+
+    document.getElementById('btnStopPrep').addEventListener('click', () => {
+        chrome.storage.local.set({ autoPrepRunning: false }, () => {
+            window.location.reload();
+        });
+    });
+
+    chrome.storage.local.get(['autoPrepRunning'], (data) => {
+        if (data.autoPrepRunning) {
+            document.getElementById('btnStartBulkPrep').style.display = 'none';
+            document.getElementById('btnStopPrep').style.display = 'block';
+            document.getElementById('prepStatusText').innerText = "جاري تحضير الحصص تلقائياً... ⏳";
+        }
     });
 }
 
-/**
- * تشغيل محرك الأتمتة
- */
 function runAutomationEngine() {
-    chrome.storage.local.get(['autoPrepRunning', 'defaultStrategy', 'selectedLesson', 'customEnrichmentUrl'], async (data) => {
+    chrome.storage.local.get(['autoPrepRunning', 'scheduleConfig', 'currentPeriodIndex'], async (data) => {
         if (!data.autoPrepRunning) return;
 
         const currentUrl = window.location.href;
 
+        // 1. صفحة الجدول
         if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule")) {
             await delay(2500);
+
             let prepButtons = Array.from(document.querySelectorAll('a, button, .btn')).filter(el => {
                 const text = el.innerText || el.textContent;
                 return text.includes("قم بإعداد الدرس") || text.includes("إعداد الدرس");
             });
 
-            if (prepButtons.length > 0) {
+            let currentIndex = data.currentPeriodIndex || 0;
+
+            if (prepButtons.length > currentIndex) {
                 await delay(1000);
-                prepButtons[0].click();
+                prepButtons[currentIndex].click();
             } else {
-                alert("🎉 تم الانتهاء من تحضير جميع حصص الجدول بنجاح!");
-                chrome.storage.local.set({ autoPrepRunning: false });
-                updateUIStatus(false);
+                alert("🎉 تم الانتهاء من تحضير كافة الحصص بنجاح!");
+                chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
             }
         }
+        
+        // 2. صفحة التحضير
         else if (currentUrl.includes("/LessonPrep") || currentUrl.includes("/PrepareLesson") || currentUrl.includes("/Lesson")) {
-            await delay(2000);
+            await delay(2500);
+
+            let periodKey = `p${(data.currentPeriodIndex || 0) + 1}`;
+            let periodData = (data.scheduleConfig && data.scheduleConfig[periodKey]) ? data.scheduleConfig[periodKey] : {};
 
             let lessonTitleEl = document.querySelector('.lesson-title, h3, h4, #LessonName, .page-header');
             let autoLessonName = lessonTitleEl ? lessonTitleEl.innerText.trim() : "المقرر الدراسي";
-            let finalLessonName = data.selectedLesson || autoLessonName;
+            let finalLessonName = periodData.lesson || autoLessonName;
 
-            let strategySelect = document.querySelector('select[name*="Strategy"], select[id*="Strategy"]');
-            if (strategySelect && strategySelect.options.length > 1) {
-                strategySelect.value = data.defaultStrategy || strategySelect.options[1]?.value;
-                strategySelect.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+            // تعبئة الهدف
+            let goalInputs = document.querySelectorAll('textarea, input[type="text"]');
+            goalInputs.forEach(input => {
+                let parentText = input.parentElement ? input.parentElement.innerText : "";
+                if (parentText.includes("هدف") || parentText.includes("الأهداف") || input.name.toLowerCase().includes("goal")) {
+                    input.value = `أن يتعرف الطالب على مفاهيم درس (${finalLessonName}) ويطبق مهاراته الأساسية.`;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
 
-            await delay(800);
+            await delay(1000);
 
-            let goalInput = document.querySelector('textarea[name*="Goal"], textarea[id*="Goal"], input[name*="Goal"], textarea[name*="Objective"]');
-            if (goalInput) {
-                goalInput.value = `أن يتعرف الطالب على المفاهيم المحددة لدرس (${finalLessonName}) ويطبق مهاراتها الأساسية بنجاح.`;
-                goalInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            // تعبئة الخيارات
+            let allSelects = document.querySelectorAll('select');
+            allSelects.forEach(select => {
+                if (select.options.length > 1) {
+                    select.selectedIndex = 1;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
 
-            await delay(800);
+            await delay(1000);
 
-            let enrichmentUrlInput = document.querySelector('input[name*="EnrichmentUrl"], input[id*="EnrichmentUrl"], input[placeholder*="رابط"]');
-            if (enrichmentUrlInput && data.customEnrichmentUrl) {
-                enrichmentUrlInput.value = data.customEnrichmentUrl;
-                enrichmentUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-
-            let enrichmentSelect = document.querySelector('select[name*="Enrichment"], select[id*="Enrichment"]');
-            if (enrichmentSelect && enrichmentSelect.options.length > 1) {
-                enrichmentSelect.selectedIndex = 1;
-                enrichmentSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            await delay(800);
-
-            let homeworkSelect = document.querySelector('select[name*="Homework"], select[id*="Homework"]');
-            if (homeworkSelect && homeworkSelect.options.length > 1) {
-                homeworkSelect.selectedIndex = 1;
-                homeworkSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            // تعبئة رابط الإثراء
+            if (periodData.enrichment) {
+                let urlInputs = document.querySelectorAll('input[type="url"], input[type="text"]');
+                urlInputs.forEach(input => {
+                    let parentText = input.parentElement ? input.parentElement.innerText : "";
+                    if (parentText.includes("رابط") || parentText.includes("إثراء")) {
+                        input.value = periodData.enrichment;
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
             }
 
             await delay(1500);
 
-            let saveButton = document.querySelector('button[type="submit"], #btnSave, .btn-primary, input[type="submit"]');
-            if (saveButton) {
-                saveButton.click();
+            // زيادة مؤشر الحصة للحصة التالية
+            chrome.storage.local.set({ currentPeriodIndex: (data.currentPeriodIndex || 0) + 1 });
+
+            // الحفظ
+            let saveButtons = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn')).filter(btn => {
+                const text = btn.innerText || btn.textContent || btn.value;
+                return text.includes("حفظ") || text.includes("إنهاء");
+            });
+
+            if (saveButtons.length > 0) {
+                saveButtons[0].click();
             }
         }
     });
-}
-
-function updateUIStatus(isRunning) {
-    const btn = document.getElementById('btnTogglePrep');
-    const statusText = document.getElementById('prepStatusText');
-    if (!btn || !statusText) return;
-
-    if (isRunning) {
-        btn.innerText = "إيقاف الأتمتة فوراً";
-        btn.style.background = "#ef4444";
-        statusText.innerText = "الحالة: جاري التحضير الشامل... ⏳";
-        statusText.style.color = "#059669";
-    } else {
-        btn.innerText = "بدء التحضير الشامل";
-        btn.style.background = "#10b981";
-        statusText.innerText = "الحالة: متوقف";
-        statusText.style.color = "#64748b";
-    }
 }
