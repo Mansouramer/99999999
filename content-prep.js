@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة التحضير الفورية (قوائم دروس العلوم المنسدلة)
+ * أداة التحضير الذكية - محرك سحب الجدول التلقائي
  * ===================================================
  */
 
@@ -17,26 +17,53 @@ function initPrepTool() {
     runAutomationEngine();
 }
 
-function isMoreThan3DaysAhead(dateString) {
-    if (!dateString) return false;
-    const classDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+/**
+ * دالة سحب وقراءة الحصص والدروس مباشرة من صفحة جدول مدرستي
+ */
+async function extractScheduleFromPage() {
+    let statusText = document.getElementById('prepStatusText');
+    if (statusText) statusText.innerText = "جاري قراءة الحصص والدروس من مدرستي... ⏳";
 
-    const diffDays = Math.ceil((classDate - today) / (1000 * 60 * 60 * 24));
-    return diffDays > 3;
-}
+    // انتظار تحميل عناصر الجدول داخل مدرستي
+    await delay(3000);
 
-function generateAutoEnrichmentUrl(lessonName) {
-    if (lessonName.includes("طقس") || lessonName.includes("فصول") || lessonName.includes("مادة") || lessonName.includes("خلايا")) {
-        return "https://ien.edu.sa/";
-    } 
-    const cleanName = encodeURIComponent("شرح درس " + lessonName);
-    return `https://www.youtube.com/results?search_query=${cleanName}`;
-}
+    // البحث عن أزرار الحصص وخانات الدروس في الجدول
+    let scheduleCells = document.querySelectorAll('.schedule-table td, table.table td, .day-cell');
+    let prepButtons = Array.from(document.querySelectorAll('a, button, .btn')).filter(el => {
+        const text = el.innerText || el.textContent;
+        return text.includes("قم بإعداد الدرس") || text.includes("إعداد الدرس") || text.includes("تعديل الإعداد");
+    });
 
-function generateAutoHomeworkText(lessonName) {
-    return `حل أسئلة مراجعة الدرس وتقويم المهارات لدرس (${lessonName}) في كتاب الطالب.`;
+    if (prepButtons.length === 0) {
+        if (statusText) statusText.innerText = "⚠️ لم يتم العثور على حصص بحاجة للتحضير في هذه الصفحة.";
+        return 0;
+    }
+
+    // قراءة وتحديث الخانات في اللوحة
+    prepButtons.forEach((btn, index) => {
+        if (index < 7) {
+            let parentCell = btn.closest('td') || btn.closest('.card') || btn.parentElement;
+            let lessonName = "درس مقرر";
+
+            if (parentCell) {
+                let titleEl = parentCell.querySelector('.subject-name, .lesson-title, h5, h6, span');
+                if (titleEl) lessonName = titleEl.innerText.trim();
+            }
+
+            let lessonSelect = document.getElementById(`lesson_p${index + 1}`);
+            if (lessonSelect) {
+                // إضافة الدرس المقروء كخيار نشط في القائمة المنسدلة
+                let opt = document.createElement('option');
+                opt.value = lessonName;
+                opt.innerText = `📌 [سحب آلي]: ${lessonName}`;
+                opt.selected = true;
+                lessonSelect.appendChild(opt);
+            }
+        }
+    });
+
+    if (statusText) statusText.innerText = `✅ تم سحب ${prepButtons.length} حصة بنجاح من الجدول!`;
+    return prepButtons.length;
 }
 
 function createFullScheduleUI() {
@@ -51,34 +78,13 @@ function createFullScheduleUI() {
         font-family: system-ui, sans-serif; direction: rtl; max-height: 88vh; overflow-y: auto;
     `;
 
-    // قائمة دروس العلوم والمواد المنسدلة الجاهزة
     let scienceLessonsHTML = `
         <option value="">-- (تلقائي) سحب الدرس من مدرستي --</option>
-        <optgroup label="🔬 علوم (الصفوف الأولية 1-3)">
+        <optgroup label="🔬 علوم">
             <option value="الطقس وفصول السنة">الطقس وفصول السنة</option>
             <option value="المخلوقات الحية وحاجاتها">المخلوقات الحية وحاجاتها</option>
             <option value="المادة وحالاتها">المادة وحالاتها</option>
-            <option value="الأرض ومواردها">الأرض ومواردها</option>
-            <option value="الحركة والقوى">الحركة والقوى</option>
-        </optgroup>
-        <optgroup label="🧪 علوم (الصفوف العليا 4-6)">
             <option value="الخلايا والأنسجة">الخلايا والأنسجة</option>
-            <option value="أجهزة جسم الإنسان">أجهزة جسم الإنسان</option>
-            <option value="الأنظمة البيئية">الأنظمة البيئية</option>
-            <option value="التغيرات الكيميائية والفيزيائية">التغيرات الكيميائية والفيزيائية</option>
-            <option value="الشمس والأرض والقمر">الشمس والأرض والقمر</option>
-            <option value="القوة والحركة والآلات البسيطة">القوة والحركة والآلات البسيطة</option>
-        </optgroup>
-        <optgroup label="📐 رياضيات (1-6)">
-            <option value="القيمة المنزلية">القيمة المنزلية</option>
-            <option value="الجمع والطرح">الجمع والطرح</option>
-            <option value="الضرب والقسمة">الضرب والقسمة</option>
-            <option value="الكسور والنسب">الكسور والنسب</option>
-        </optgroup>
-        <optgroup label="📗 لغتي الجميلة (1-6)">
-            <option value="حروفي وكلماتي">حروفي وكلماتي</option>
-            <option value="أسرتي ومدرستي">أسرتي ومدرستي</option>
-            <option value="قيم إسلامية ووطنية">قيم إسلامية ووطنية</option>
         </optgroup>
     `;
 
@@ -104,8 +110,14 @@ function createFullScheduleUI() {
 
     uiBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="margin:0; color:#1e293b; font-size:14px;">⚡ لوحة التحضير (دروس العلوم والصفوف 1-6)</h3>
+            <h3 style="margin:0; color:#1e293b; font-size:14px;">⚡ لوحة تحضير الجدول الشامل</h3>
             <button id="btnCloseUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
+        </div>
+
+        <div style="margin-bottom:8px; text-align:right;">
+            <button id="btnFetchSchedule" style="padding:6px 12px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
+                🔄 إعادة سحب الجدول من الصفحة الحالية
+            </button>
         </div>
         
         <table style="width:100%; border-collapse:collapse; margin-bottom:10px; text-align:right;">
@@ -126,11 +138,8 @@ function createFullScheduleUI() {
             <button id="btnStartBulkPrep" style="flex:1; padding:10px; background:#10b981; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">
                 🚀 حفظ وبدء التحضير التلقائي
             </button>
-            <button id="btnStopPrep" style="padding:10px; background:#ef4444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:none;">
-                ⏹ إيقاف
-            </button>
         </div>
-        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">اللوحة جاهزة ومفتوحة الآن</div>
+        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">جاهز للسحب والتحضير</div>
     `;
 
     document.body.appendChild(uiBox);
@@ -139,156 +148,17 @@ function createFullScheduleUI() {
         uiBox.style.display = 'none';
     });
 
-    document.getElementById('btnStartBulkPrep').addEventListener('click', () => {
-        let scheduleConfig = {};
-        for (let i = 1; i <= 7; i++) {
-            let pDate = document.getElementById(`date_p${i}`).value;
-
-            if (isMoreThan3DaysAhead(pDate)) {
-                let proceed = confirm(`⚠️ تنبيه: الحصة رقم (${i}) تاريخها أبعد من 3 أيام القادمة.\nهل ترغب في استمرار تحضيرها؟`);
-                if (!proceed) continue;
-            }
-
-            scheduleConfig[`p${i}`] = {
-                date: pDate,
-                lesson: document.getElementById(`lesson_p${i}`).value,
-                enrichment: document.getElementById(`enrichment_p${i}`).value.trim()
-            };
-        }
-
-        chrome.storage.local.set({
-            autoPrepRunning: true,
-            scheduleConfig: scheduleConfig,
-            currentPeriodIndex: 0
-        }, () => {
-            if (!window.location.href.includes("/Schedule")) {
-                window.location.href = "https://schools.madrasati.sa/Teacher/Schedule";
-            } else {
-                window.location.reload();
-            }
-        });
+    document.getElementById('btnFetchSchedule').addEventListener('click', () => {
+        extractScheduleFromPage();
     });
 
-    document.getElementById('btnStopPrep').addEventListener('click', () => {
-        chrome.storage.local.set({ autoPrepRunning: false }, () => {
-            window.location.reload();
-        });
-    });
-
-    chrome.storage.local.get(['autoPrepRunning'], (data) => {
-        if (data.autoPrepRunning) {
-            document.getElementById('btnStartBulkPrep').style.display = 'none';
-            document.getElementById('btnStopPrep').style.display = 'block';
-            document.getElementById('prepStatusText').innerText = "جاري التحضير التلقائي للحصص... ⏳";
-        }
-    });
+    // سحب آلي عند التحميل إذا كنا في صفحة الجدول
+    if (window.location.href.includes("/Schedule") || window.location.href.includes("/Teacher/Schedule")) {
+        extractScheduleFromPage();
+    }
 }
 
 function runAutomationEngine() {
-    chrome.storage.local.get(['autoPrepRunning', 'scheduleConfig', 'currentPeriodIndex'], async (data) => {
-        if (!data.autoPrepRunning) return;
-
-        const currentUrl = window.location.href;
-
-        if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule")) {
-            await delay(2500);
-
-            let prepButtons = Array.from(document.querySelectorAll('a, button, .btn')).filter(el => {
-                const text = el.innerText || el.textContent;
-                return text.includes("قم بإعداد الدرس") || text.includes("إعداد الدرس");
-            });
-
-            let currentIndex = data.currentPeriodIndex || 0;
-
-            if (prepButtons.length > currentIndex) {
-                await delay(1000);
-                prepButtons[currentIndex].click();
-            } else {
-                alert("🎉 تم الانتهاء من تحضير الحصص بنجاح!");
-                chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
-            }
-        }
-        else if (currentUrl.includes("/LessonPrep") || currentUrl.includes("/PrepareLesson") || currentUrl.includes("/Lesson")) {
-            await delay(2500);
-
-            let periodKey = `p${(data.currentPeriodIndex || 0) + 1}`;
-            let periodData = (data.scheduleConfig && data.scheduleConfig[periodKey]) ? data.scheduleConfig[periodKey] : {};
-
-            let lessonTitleEl = document.querySelector('.lesson-title, h3, h4, #LessonName, .page-header');
-            let autoLessonName = lessonTitleEl ? lessonTitleEl.innerText.trim() : "المقرر الدراسي";
-            let finalLessonName = periodData.lesson || autoLessonName;
-
-            let goalInputs = document.querySelectorAll('textarea, input[type="text"]');
-            goalInputs.forEach(input => {
-                let parentText = input.parentElement ? input.parentElement.innerText : "";
-                if (parentText.includes("هدف") || parentText.includes("الأهداف") || input.name.toLowerCase().includes("goal")) {
-                    input.value = `أن يتعرف الطالب على مفاهيم درس (${finalLessonName}) ويطبق مهاراته الأساسية.`;
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            });
-
-            await delay(1000);
-
-            let homeworkSet = false;
-            let enrichmentSet = false;
-
-            let allSelects = document.querySelectorAll('select');
-            allSelects.forEach(select => {
-                let parentText = select.parentElement ? select.parentElement.innerText : "";
-                if (select.options.length > 1) {
-                    select.selectedIndex = 1;
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                    
-                    if (parentText.includes("واجب") || select.name.toLowerCase().includes("homework")) {
-                        homeworkSet = true;
-                    }
-                    if (parentText.includes("إثراء") || select.name.toLowerCase().includes("enrichment")) {
-                        enrichmentSet = true;
-                    }
-                }
-            });
-
-            await delay(1000);
-
-            if (!homeworkSet) {
-                let homeworkTextInputs = document.querySelectorAll('textarea, input[type="text"]');
-                homeworkTextInputs.forEach(input => {
-                    let parentText = input.parentElement ? input.parentElement.innerText : "";
-                    if (parentText.includes("واجب") || parentText.includes("ملاحظات") || input.name.toLowerCase().includes("homework")) {
-                        input.value = generateAutoHomeworkText(finalLessonName);
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                });
-            }
-
-            let finalEnrichmentUrl = periodData.enrichment || generateAutoEnrichmentUrl(finalLessonName);
-            if (!enrichmentSet || periodData.enrichment) {
-                let urlInputs = document.querySelectorAll('input[type="url"], input[type="text"]');
-                urlInputs.forEach(input => {
-                    let parentText = input.parentElement ? input.parentElement.innerText : "";
-                    if (parentText.includes("رابط") || parentText.includes("إثراء") || input.placeholder.includes("http")) {
-                        input.value = finalEnrichmentUrl;
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                });
-            }
-
-            await delay(1500);
-
-            chrome.storage.local.set({ currentPeriodIndex: (data.currentPeriodIndex || 0) + 1 });
-
-            let saveButtons = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn')).filter(btn => {
-                const text = btn.innerText || btn.textContent || btn.value;
-                return text.includes("حفظ") || text.includes("إنهاء");
-            });
-
-            if (saveButtons.length > 0) {
-                saveButtons[0].click();
-            }
-        }
-    });
+    // محرك الأتمتة للتحضير
 }
 
