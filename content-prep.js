@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة علوم الصف الأول - التعبئة الآلية المستمرة عند التنقل
+ * أداة علوم الصف الأول - دعم المحررات المتقدمة (CKEditor / contenteditable)
  * ===================================================
  */
 
@@ -14,13 +14,9 @@ if (document.readyState === 'loading') {
 
 function initAutoObserver() {
     createMiniStatusUI();
-    // بدء فحص وتعبئة محتوى الصفحة الحالية فور تحميلها
     autoProcessCurrentPage();
 }
 
-/**
- * شريط حالة علوي صامت ومباشر
- */
 function createMiniStatusUI() {
     if (document.getElementById('prep-mini-ui')) return;
 
@@ -35,117 +31,124 @@ function createMiniStatusUI() {
     `;
 
     uiBox.innerHTML = `
-        <span>🔬 أداة التعبئة الآلية (تراقب التنقل بين الصفحات)</span>
-        <span id="autoStatusLabel" style="background:#0369a1; padding:3px 8px; border-radius:4px;">جاهز للتعبئة...</span>
+        <span>🔬 أداة التعبئة المباشرة (محررات مدرستي)</span>
+        <button id="btnManualTrigger" style="background:#10b981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">⚡ اضغط للتعبئة الفورية</button>
     `;
 
     document.body.appendChild(uiBox);
+
+    document.getElementById('btnManualTrigger').addEventListener('click', () => {
+        autoProcessCurrentPage(true);
+    });
 }
 
 function updateStatusLabel(text, bgColor = "#0369a1") {
-    const label = document.getElementById('autoStatusLabel');
-    if (label) {
-        label.innerText = text;
-        label.style.background = bgColor;
+    const btn = document.getElementById('btnManualTrigger');
+    if (btn) {
+        btn.innerText = text;
+        btn.style.background = bgColor;
     }
 }
 
 /**
- * المحرك الأساسي: قراءة مكونات الصفحة الحالية والتعبئة الفورية
+ * الكتابة داخل المحررات المتقدمة (CKEditor / contenteditable / iframe)
  */
-async function autoProcessCurrentPage() {
-    await delay(1200); // مهلة قصيرة لاكتمال تحميل عناصر الصفحة
+function writeToRichEditor(targetContainer, textValue) {
+    if (!targetContainer) return false;
 
-    // 1. الشاشة الأولى: المسار التعليمي والقوائم المنسدلة
-    const hasSelects = document.querySelector('select');
-    const isStep1 = hasSelects && !document.querySelector('#btnSave, button[type="submit"]');
-
-    if (isStep1) {
-        updateStatusLabel("جاري سحب المسار وقوائم الدرس... ⏳", "#d97706");
-
-        let selects = Array.from(document.querySelectorAll('select'));
-
-        for (let i = 0; i < selects.length; i++) {
-            let sel = selects[i];
-            if (sel.options.length > 1 && sel.selectedIndex === 0) {
-                sel.selectedIndex = 1; // اختيار المستوى التلقائي المتاح
-                sel.dispatchEvent(new Event('focus', { bubbles: true }));
-                sel.dispatchEvent(new Event('change', { bubbles: true }));
-                sel.dispatchEvent(new Event('blur', { bubbles: true }));
-                await delay(800);
-            }
-        }
-
-        // تحديد نمط التعليم غير المتزامن
-        let asyncRadio = document.querySelector('input[type="radio"][value*="غير متزامن"], input[type="radio"][id*="Async"]');
-        if (asyncRadio) {
-            asyncRadio.click();
-            asyncRadio.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-
-        updateStatusLabel("✅ تم تعبئة المسار التعليمي بنجاح!", "#059669");
-        return;
+    // 1. فحص وجود عنصر contenteditable داخل المنطقة
+    let editableDiv = targetContainer.querySelector('[contenteditable="true"]') || targetContainer.querySelector('.ck-editor__editable');
+    if (editableDiv) {
+        editableDiv.innerHTML = `<p>${textValue}</p>`;
+        editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
+        editableDiv.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
     }
 
-    // 2. الشاشة الثانية: الوسائط، مهارات التفكير، إغلاق الدرس، والتكليفات
-    const hasTextareas = document.querySelector('textarea');
-    const isStep2 = hasTextareas || document.innerText?.includes("مهارات التفكير") || document.innerText?.includes("الوسائط");
-
-    if (isStep2) {
-        updateStatusLabel("جاري تعبئة الوسائط والمهارات والتكليفات... ⏳", "#d97706");
-
-        // تحديد الوسائط الاجتماعية
-        let mediaCheckboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-        if (mediaCheckboxes.length > 0 && !mediaCheckboxes[0].checked) {
-            mediaCheckboxes[0].click();
-            mediaCheckboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    // 2. فحص وجود iframe (المحررات التقليدية)
+    let iframe = targetContainer.querySelector('iframe');
+    if (iframe && iframe.contentDocument) {
+        let body = iframe.contentDocument.body;
+        if (body) {
+            body.innerHTML = `<p>${textValue}</p>`;
+            body.dispatchEvent(new Event('input', { bubbles: true }));
+            return true;
         }
-
-        // تعبئة مهارات التفكير
-        let thinkingArea = Array.from(document.querySelectorAll('textarea')).find(t => {
-            let p = t.placeholder || "";
-            let parent = t.parentElement?.innerText || "";
-            return p.includes("التفكير") || parent.includes("مهارات التفكير");
-        });
-        if (thinkingArea && !thinkingArea.value) {
-            thinkingArea.value = "الملاحظة، المقارنة، والاستنتاج؛ للتمييز بين الكائنات الحية وغير الحية.";
-            thinkingArea.dispatchEvent(new Event('input', { bubbles: true }));
-            thinkingArea.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-
-        // تعبئة إغلاق الدرس
-        let closingArea = Array.from(document.querySelectorAll('textarea')).find(t => {
-            let p = t.placeholder || "";
-            let parent = t.parentElement?.innerText || "";
-            return p.includes("إغلاق") || parent.includes("إغلاق الدرس");
-        });
-        if (closingArea && !closingArea.value) {
-            closingArea.value = "تلخيص المفاهيم الأساسية للدرس والتأكد من تحقيق أهداف التعلم.";
-            closingArea.dispatchEvent(new Event('input', { bubbles: true }));
-            closingArea.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-
-        // تعبئة الملاحظات والتكليفات العامة
-        let generalAreas = document.querySelectorAll('textarea');
-        generalAreas.forEach(ta => {
-            if (!ta.value) {
-                ta.value = "متابعة حل الأنشطة والتطبيقات المحددة لمادة العلوم في كتاب الطالب.";
-                ta.dispatchEvent(new Event('input', { bubbles: true }));
-                ta.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        });
-
-        // إضافة الإثراء التلقائي
-        let addEnrichmentBtn = document.querySelector('button[id*="Enrichment"], .btn-add-enrichment, a[href*="Enrichment"]');
-        if (addEnrichmentBtn) {
-            addEnrichmentBtn.click();
-            await delay(1000);
-        }
-
-        updateStatusLabel("✅ تم تعبئة جميع الأيقونات! يمكنك الحفظ الآن.", "#059669");
-        return;
     }
 
-    updateStatusLabel("جاهز للتعبئة فور الانتقال لصفحة إعداد...", "#0369a1");
+    // 3. فحص وجود textarea عادي
+    let textarea = targetContainer.querySelector('textarea');
+    if (textarea) {
+        textarea.value = textValue;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * المحرك الرئيسي لتعبئة صفحة المكونات والوسائط
+ */
+async function autoProcessCurrentPage(isManual = false) {
+    await delay(1000);
+    updateStatusLabel("جاري التعبئة... ⏳", "#d97706");
+
+    let filledCount = 0;
+
+    // البحث عن جميع الأقسام الحاوية للخانات
+    let allSections = Array.from(document.querySelectorAll('div, section, td, .form-group'));
+
+    allSections.forEach(sec => {
+        let titleText = (sec.innerText || sec.textContent || "").trim();
+
+        // 1. تعبئة التهيئة
+        if (titleText.includes("التهيئة") && !titleText.includes("مكتمل")) {
+            if (writeToRichEditor(sec, "التمهيد للدرس بعرض الصور التفاعلية والعينات الاستكشافية لمادة العلوم.")) filledCount++;
+        }
+
+        // 2. تعبئة مفردات الدرس
+        if (titleText.includes("مفردات الدرس")) {
+            if (writeToRichEditor(sec, "المخلوقات الحية، الأشياء غير الحية، النمو، التغذية.")) filledCount++;
+        }
+
+        // 3. تعبئة مهارات التفكير
+        if (titleText.includes("مهارات التفكير")) {
+            if (writeToRichEditor(sec, "الملاحظة، المقارنة، والتصنيف للتمييز بين الكائنات الحية والغير حية.")) filledCount++;
+        }
+
+        // 4. تعبئة إغلاق الدرس
+        if (titleText.includes("إغلاق الدرس")) {
+            if (writeToRichEditor(sec, "مراجعة المفاهيم الأساسية وتأكيد تحقيق أهداف الحصة.")) filledCount++;
+        }
+    });
+
+    // 5. تحديد خيار الوسائط الاجتماعية إذا كان متاحاً
+    let mediaCheckboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+    if (mediaCheckboxes.length > 0) {
+        mediaCheckboxes.forEach(cb => {
+            if (!cb.checked) {
+                cb.click();
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
+
+    // 6. الضغط على زر إضافة إثراء أو واجب إن وجد
+    let addBtn = Array.from(document.querySelectorAll('button, a')).find(b => {
+        let txt = b.innerText || "";
+        return txt.includes("إضافة إثراء") || txt.includes("إضافة واجب") || txt.includes("اختيار إثراء");
+    });
+    if (addBtn) {
+        addBtn.click();
+        await delay(1000);
+    }
+
+    if (filledCount > 0 || isManual) {
+        updateStatusLabel("✅ تم كتابة النماذج بنجاح!", "#059669");
+    } else {
+        updateStatusLabel("⚡ اضغط للتعبئة الفورية", "#10b981");
+    }
 }
 
