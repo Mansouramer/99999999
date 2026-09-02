@@ -1,158 +1,151 @@
 /**
  * ===================================================
- * أداة تعبئة (التهيئة + الإثراءات + الواجبات + الاختبارات + الخطة)
+ * أداة علوم الصف الأول - التعبئة الآلية المستمرة عند التنقل
  * ===================================================
  */
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initStep2Panel);
+    document.addEventListener('DOMContentLoaded', initAutoObserver);
 } else {
-    initStep2Panel();
+    initAutoObserver();
 }
 
-function initStep2Panel() {
-    createStep2ControlUI();
+function initAutoObserver() {
+    createMiniStatusUI();
+    // بدء فحص وتعبئة محتوى الصفحة الحالية فور تحميلها
+    autoProcessCurrentPage();
 }
 
-function createStep2ControlUI() {
-    if (document.getElementById('step2-automation-ui')) return;
+/**
+ * شريط حالة علوي صامت ومباشر
+ */
+function createMiniStatusUI() {
+    if (document.getElementById('prep-mini-ui')) return;
 
     const uiBox = document.createElement('div');
-    uiBox.id = 'step2-automation-ui';
+    uiBox.id = 'prep-mini-ui';
     uiBox.style.cssText = `
-        position: fixed; top: 15px; left: 3%; right: 3%; z-index: 999999;
-        background: #ffffff; border: 2px solid #0284c7; padding: 12px;
-        border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.3);
-        font-family: system-ui, sans-serif; direction: rtl;
+        position: fixed; top: 10px; left: 3%; right: 3%; z-index: 999999;
+        background: #0284c7; color: #ffffff; padding: 8px 14px;
+        border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        font-family: system-ui, sans-serif; font-size: 11px; font-weight: bold;
+        display: flex; justify-content: space-between; align-items: center; direction: rtl;
     `;
 
     uiBox.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:#0369a1; font-size:13px;">⚡ أداة التعبئة الشاملة (المكونات والخطة)</h3>
-            <button id="btnCloseStep2UI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
-        </div>
-
-        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
-            <button id="btnFillAllComponents" style="padding:10px; background:#10b981; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">
-                🚀 تعبئة (التهيئة + الإثراء + الواجب + الملاحظات) والحفظ
-            </button>
-            <button id="btnPublishWeeklyPlan" style="padding:8px; background:#8b5cf6; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
-                📢 نشر الخطة الأسبوعية للإعلانات
-            </button>
-        </div>
-        <div id="step2StatusText" style="margin-top:4px; font-size:10px; color:#64748b; text-align:center;">جاهز لتعبئة كافة الأيقونات المطلوب إكمالها</div>
+        <span>🔬 أداة التعبئة الآلية (تراقب التنقل بين الصفحات)</span>
+        <span id="autoStatusLabel" style="background:#0369a1; padding:3px 8px; border-radius:4px;">جاهز للتعبئة...</span>
     `;
 
     document.body.appendChild(uiBox);
-
-    document.getElementById('btnCloseStep2UI').addEventListener('click', () => {
-        uiBox.style.display = 'none';
-    });
-
-    document.getElementById('btnFillAllComponents').addEventListener('click', () => {
-        autoFillAllPrepComponents();
-    });
-
-    document.getElementById('btnPublishWeeklyPlan').addEventListener('click', () => {
-        publishWeeklyPlanDirect();
-    });
 }
 
-/**
- * تعبئة عناصر التحضير (التهيئة، الإثراءات، الواجبات، الاختبارات، الملاحظات)
- */
-async function autoFillAllPrepComponents() {
-    let statusText = document.getElementById('step2StatusText');
-    if (statusText) statusText.innerText = "جاري تعبئة العناصر المطلوبة... ⏳";
-
-    // 1. تعبئة حقل التهيئة / التمهيد
-    let warmupInput = document.querySelector('textarea[name*="Warmup"], textarea[id*="Warmup"], textarea[name*="Intro"]');
-    if (warmupInput) {
-        warmupInput.value = "التمهيد للدرس باستخدام الصور التفاعلية وعرض العينات الاستكشافية.";
-        warmupInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    // 2. إضافة إثراء
-    let addEnrichmentBtn = document.querySelector('button[id*="Enrichment"], .btn-add-enrichment, a[href*="Enrichment"]');
-    if (addEnrichmentBtn) {
-        addEnrichmentBtn.click();
-        await delay(1000);
-    }
-
-    // 3. اختيار/إضافة واجب أو تطبيق
-    let addHomeworkBtn = document.querySelector('button[id*="Homework"], .btn-add-homework, a[href*="Homework"]');
-    if (addHomeworkBtn) {
-        addHomeworkBtn.click();
-        await delay(1000);
-    }
-
-    // 4. اختيار/إضافة اختبار قصير
-    let addExamBtn = document.querySelector('button[id*="Exam"], .btn-add-exam, a[href*="Exam"]');
-    if (addExamBtn) {
-        addExamBtn.click();
-        await delay(1000);
-    }
-
-    // 5. تعبئة صندوق الملاحظات والتعليمات للطلاب
-    let noteTextarea = document.querySelector('textarea:not([name*="Warmup"])') || document.querySelector('textarea');
-    if (noteTextarea) {
-        noteTextarea.value = "متابعة حل الأنشطة والتطبيقات المحددة لمادة العلوم في كتاب الطالب.";
-        noteTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-        noteTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    await delay(1500);
-
-    // 6. الضغط المباشر على زر "حفظ وإنهاء"
-    let saveBtn = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn')).find(b => {
-        const text = (b.innerText || b.textContent || "").trim();
-        return text.includes("حفظ") || text.includes("إنهاء");
-    });
-
-    if (saveBtn) {
-        if (statusText) statusText.innerText = "✅ تم تعبئة جميع الأيقونات! جاري الحفظ النهائي...";
-        await delay(800);
-        saveBtn.click();
-    } else {
-        if (statusText) statusText.innerText = "⚠️ اكتملت التعبئة! يرجى الضغط على زر (حفظ وإنهاء).";
+function updateStatusLabel(text, bgColor = "#0369a1") {
+    const label = document.getElementById('autoStatusLabel');
+    if (label) {
+        label.innerText = text;
+        label.style.background = bgColor;
     }
 }
 
 /**
- * نشر الخطة الأسبوعية مباشرة
+ * المحرك الأساسي: قراءة مكونات الصفحة الحالية والتعبئة الفورية
  */
-async function publishWeeklyPlanDirect() {
-    let statusText = document.getElementById('step2StatusText');
-    const currentUrl = window.location.href;
+async function autoProcessCurrentPage() {
+    await delay(1200); // مهلة قصيرة لاكتمال تحميل عناصر الصفحة
 
-    if (!currentUrl.includes("/Announcements") && !currentUrl.includes("/Announcement")) {
-        if (statusText) statusText.innerText = "جاري الانتقال لصفحة الإعلانات... ⏳";
-        chrome.storage.local.set({ autoPublishPlan: true }, () => {
-            window.location.href = "https://schools.madrasati.sa/Teacher/Announcements";
-        });
+    // 1. الشاشة الأولى: المسار التعليمي والقوائم المنسدلة
+    const hasSelects = document.querySelector('select');
+    const isStep1 = hasSelects && !document.querySelector('#btnSave, button[type="submit"]');
+
+    if (isStep1) {
+        updateStatusLabel("جاري سحب المسار وقوائم الدرس... ⏳", "#d97706");
+
+        let selects = Array.from(document.querySelectorAll('select'));
+
+        for (let i = 0; i < selects.length; i++) {
+            let sel = selects[i];
+            if (sel.options.length > 1 && sel.selectedIndex === 0) {
+                sel.selectedIndex = 1; // اختيار المستوى التلقائي المتاح
+                sel.dispatchEvent(new Event('focus', { bubbles: true }));
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                sel.dispatchEvent(new Event('blur', { bubbles: true }));
+                await delay(800);
+            }
+        }
+
+        // تحديد نمط التعليم غير المتزامن
+        let asyncRadio = document.querySelector('input[type="radio"][value*="غير متزامن"], input[type="radio"][id*="Async"]');
+        if (asyncRadio) {
+            asyncRadio.click();
+            asyncRadio.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        updateStatusLabel("✅ تم تعبئة المسار التعليمي بنجاح!", "#059669");
         return;
     }
 
-    await delay(2000);
-    let titleInput = document.querySelector('input[name*="Title"], input[id*="Title"], #Title');
-    let detailsInput = document.querySelector('textarea[name*="Details"], textarea[id*="Details"], #Details');
+    // 2. الشاشة الثانية: الوسائط، مهارات التفكير، إغلاق الدرس، والتكليفات
+    const hasTextareas = document.querySelector('textarea');
+    const isStep2 = hasTextareas || document.innerText?.includes("مهارات التفكير") || document.innerText?.includes("الوسائط");
 
-    if (titleInput && detailsInput) {
-        titleInput.value = "📌 خطة التعلم الأسبوعية - مادة العلوم (الصف الأول الابتدائي)";
-        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+    if (isStep2) {
+        updateStatusLabel("جاري تعبئة الوسائط والمهارات والتكليفات... ⏳", "#d97706");
 
-        detailsInput.value = "أولياء الأمور والطلاب الكرام، مرفق لكم خطة التعلم الأسبوعية لمادة العلوم للصف الأول الابتدائي.";
-        detailsInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-        await delay(1000);
-        let publishBtn = document.querySelector('button[type="submit"], #btnSave, .btn-primary');
-        if (publishBtn) {
-            chrome.storage.local.set({ autoPublishPlan: false });
-            publishBtn.click();
-            alert("✅ تم نشر الخطة الأسبوعية بنجاح!");
+        // تحديد الوسائط الاجتماعية
+        let mediaCheckboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+        if (mediaCheckboxes.length > 0 && !mediaCheckboxes[0].checked) {
+            mediaCheckboxes[0].click();
+            mediaCheckboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
         }
+
+        // تعبئة مهارات التفكير
+        let thinkingArea = Array.from(document.querySelectorAll('textarea')).find(t => {
+            let p = t.placeholder || "";
+            let parent = t.parentElement?.innerText || "";
+            return p.includes("التفكير") || parent.includes("مهارات التفكير");
+        });
+        if (thinkingArea && !thinkingArea.value) {
+            thinkingArea.value = "الملاحظة، المقارنة، والاستنتاج؛ للتمييز بين الكائنات الحية وغير الحية.";
+            thinkingArea.dispatchEvent(new Event('input', { bubbles: true }));
+            thinkingArea.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // تعبئة إغلاق الدرس
+        let closingArea = Array.from(document.querySelectorAll('textarea')).find(t => {
+            let p = t.placeholder || "";
+            let parent = t.parentElement?.innerText || "";
+            return p.includes("إغلاق") || parent.includes("إغلاق الدرس");
+        });
+        if (closingArea && !closingArea.value) {
+            closingArea.value = "تلخيص المفاهيم الأساسية للدرس والتأكد من تحقيق أهداف التعلم.";
+            closingArea.dispatchEvent(new Event('input', { bubbles: true }));
+            closingArea.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // تعبئة الملاحظات والتكليفات العامة
+        let generalAreas = document.querySelectorAll('textarea');
+        generalAreas.forEach(ta => {
+            if (!ta.value) {
+                ta.value = "متابعة حل الأنشطة والتطبيقات المحددة لمادة العلوم في كتاب الطالب.";
+                ta.dispatchEvent(new Event('input', { bubbles: true }));
+                ta.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+
+        // إضافة الإثراء التلقائي
+        let addEnrichmentBtn = document.querySelector('button[id*="Enrichment"], .btn-add-enrichment, a[href*="Enrichment"]');
+        if (addEnrichmentBtn) {
+            addEnrichmentBtn.click();
+            await delay(1000);
+        }
+
+        updateStatusLabel("✅ تم تعبئة جميع الأيقونات! يمكنك الحفظ الآن.", "#059669");
+        return;
     }
+
+    updateStatusLabel("جاهز للتعبئة فور الانتقال لصفحة إعداد...", "#0369a1");
 }
 
