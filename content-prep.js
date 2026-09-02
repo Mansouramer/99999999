@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة علوم الصف الأول الابتدائي - قاعدة بيانات الفصل الأول الشاملة
+ * أداة علوم الصف الأول الابتدائي - دعم إضافة الإثراءات التلقائية والتوزيع الدقيق
  * ===================================================
  */
 
@@ -14,20 +14,20 @@ if (document.readyState === 'loading') {
 
 function initScienceCurriculumFiller() {
     createTriggerBar();
-    enableClickToFillListener();
 }
 
 /**
- * قاعدة البيانات الشاملة لجميع دروس كتاب العلوم - الصف الأول الابتدائي (الفصل الدراسي الأول)
+ * قاعدة البيانات الشاملة لمنهج العلوم + روابط إثراءات عين التعليمية
  */
 const fullFirstTermScienceCurriculum = [
     {
-        keywords: ["المخلوقات الحية", "الحية والغير حية", "البيئة"],
+        keywords: ["المخلوقات الحية", "الحية والغير حية"],
         warmup: "توجيه أسئلة تفاعلية حول الأشياء الموجودة في الغرفة الصفية، وعرض صور لمخلوقات حية وأشياء غير حية لملاحظة الفروق بينها.",
         terms: "مخلوق حي، شيء غير حي، نمو، غطاء، بيئة، تنفس، غذاء.",
         thinking: "الملاحظة والتصنيف: تصنيف الأشياء في الصور إلى مخلوقات حية تموت وتنمو، وأشياء غير حية لا تتغير.",
         closing: "التأكيد على أن المخلوقات الحية تحتاج إلى الماء والهواء والغذاء والمكان لتبقى على قيد الحياة.",
-        notes: "حل أنشطة درس المخلوقات الحية في كتاب الطالب والتأكد من استيعاب مفردات النمو والتغذية."
+        enrichmentTitle: "إثراء مرئي: خصائص المخلوقات الحية - منصة عين",
+        enrichmentUrl: "https://ien.edu.sa"
     },
     {
         keywords: ["النباتات", "أجزاء النبات", "تنباتات تنمو", "النباتات وأجزاؤها"],
@@ -35,45 +35,20 @@ const fullFirstTermScienceCurriculum = [
         terms: "جذور، ساق، أوراق، أزهار، ثمار، بذرة، ضوء الشمس، تربة.",
         thinking: "المقارنة والملاحظة: المقارنة بين وظائف أجزاء النبات (الجذور تمتص الماء، الساق تنقل الغذاء، الأوراق تصنع الغذاء).",
         closing: "تلخيص أهمية النباتات وكيف تنمو من البذرة لتصبح نباتاً كاملاً بحاجة الضوء والماء.",
-        notes: "متابعة حل نشاط استكشف ورسم أجزاء النبات في كتاب الطالب."
+        enrichmentTitle: "إثراء تفاعلي: أجزاء النبات ووظائفها - منصة عين",
+        enrichmentUrl: "https://ien.edu.sa"
     },
     {
-        keywords: ["الحيوانات", "حيوانات", "أنواع الحيوانات", "مأوى"],
+        keywords: ["الحيوانات", "حيوانات", "مأوى"],
         warmup: "عرض مقطع فيديو قصير يوضح حيوانات مختلفة وتنوع بيئاتها وطرق حركتها لحث الطلاب على الاكتشاف.",
         terms: "حيوانات، مأوى، جحر، مفترس، أليف، حركة، طيران، سباحة.",
         thinking: "التصنيف والاستنتاج: تصنيف الحيوانات بحسب غطاء جسمها (شعر، ريش، قشور) وطريقة حركتها.",
         closing: "مناقشة احتياجات الحيوانات الأساسية للحياة والتأكيد على أجزاء جسمها التي تساعدها على أخذ حاجتها.",
-        notes: "تطبيق نشاط المقارنة بين الحيوانات وحل أسئلة الدرس في الكتاب المدرسي."
-    },
-    {
-        keywords: ["النمو والتغير", "كيف تنمو", "دورات الحياة"],
-        warmup: "استعراض صور توضح مراحل نمو الفراشة أو الدجاجة وسؤال الطلاب عن التغيرات التي تطرأ عليها.",
-        terms: "نمو، بيضة، صوص، دجاجة، فراشة، صغير، تغير، دورة حياة.",
-        thinking: "التسلسل والترتيب: ترتيب مراحل نمو الحيوان والنبات من البداية وحتى مرحلة الإكتمال.",
-        closing: "التأكيد على أن جميع صغار الحيوانات تنمو وتتغير لتصبح شبيهة بآبائها.",
-        notes: "حل تمارين التسلسل الزمني لمراحل النمو في كتاب الطالب."
-    },
-    {
-        keywords: ["الطقس", "فصول", "الشتاء", "الصيف", "الربيع", "الخريف"],
-        warmup: "النظر عبر نافذة الفصل ومناقشة حالة الجو اليوم والمقارنة بين ما نرتديه في الصيف والشتاء.",
-        terms: "طقس، درجات الحرارة، رياح، أمطار، مشمس، غائم، فصول السنة.",
-        thinking: "الملاحظة والتنبؤ: الاستدلال على الفصل السائد من خلال حالة الطقس ونوع الملابس ونشاط الكائنات.",
-        closing: "تلخيص خصائص فصول السنة الأربعة وتأثير الطقس على سلوك النباتات والحيوانات.",
-        notes: "متابعة حل جدول الطقس اليومي وأسئلة الفصول في كتاب الطالب."
-    },
-    {
-        keywords: ["المادة", "خصائص المادة", "صلبة", "سائلة", "غازية"],
-        warmup: "عرض مجموعة من الأجسام المختلفة (حجر، ماء، بالون) ومطالبة الطلاب بلمسها ووصف ملمسها وشكلها.",
-        terms: "مادة، صلبة، سائلة، غازية، حجم، ملمس، كتلة، حواس.",
-        thinking: "التفسير والتصنيف: استخدام الحواس الخمس للتمييز بين حالات المادة الثلاث وتصنيف الخصائص.",
-        closing: "تأكيد أن كل شيء حولنا يتكون من مادة ولها حالات مختلفة (صلب، سائل، غاز).",
-        notes: "حل تطبيقات درس المادة وحالاتها والتأكد من كتابة المفردات في المحرر."
+        enrichmentTitle: "إثراء مرئي: احتياجات الحيوانات وبيئاتها - منصة عين",
+        enrichmentUrl: "https://ien.edu.sa"
     }
 ];
 
-/**
- * شريط تعبئة أعلى الصفحة
- */
 function createTriggerBar() {
     if (document.getElementById('manual-filler-bar')) return;
 
@@ -88,37 +63,29 @@ function createTriggerBar() {
     `;
 
     bar.innerHTML = `
-        <span>📘 التعبئة المنهجية لمفردات كتاب العلوم (الصف الأول - ف1)</span>
+        <span>📘 التعبئة المنهجية وإضافة الإثراءات (علوم الأول الابتدائي)</span>
         <button id="btnFillEntirePage" style="background:#10b981; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">
-            ⚡ تعبئة مفردات ونصوص الدرس الآن
+            ⚡ تعبئة الخانات وإدراج الإثراء الآن
         </button>
     `;
 
     document.body.appendChild(bar);
 
     document.getElementById('btnFillEntirePage').addEventListener('click', () => {
-        fillAllScienceEditorsOnPage();
+        fillAllScienceEditorsAndEnrichments();
     });
 }
 
-/**
- * دالة المطابقة الذكية للدرس المفتوح بناءً على مفردات الصفحة
- */
 function getMatchingLessonData() {
     let pageContent = (document.body.innerText || "").toLowerCase();
-
     for (let item of fullFirstTermScienceCurriculum) {
-        let isMatch = item.keywords.some(kw => pageContent.includes(kw.toLowerCase()));
-        if (isMatch) return item;
+        if (item.keywords.some(kw => pageContent.includes(kw.toLowerCase()))) {
+            return item;
+        }
     }
-
-    // افتراضي لدرس النباتات في حال تعذر التحديد
-    return fullFirstTermScienceCurriculum[1];
+    return fullFirstTermScienceCurriculum[0];
 }
 
-/**
- * كتابة النص المباشر في محررات مدرستي (contenteditable / iframe / textarea)
- */
 function injectTextToTarget(targetElement, defaultText) {
     if (!targetElement) return false;
 
@@ -149,64 +116,72 @@ function injectTextToTarget(targetElement, defaultText) {
     return false;
 }
 
-/**
- * ميزة التعبئة بالنقر
- */
-function enableClickToFillListener() {
-    document.addEventListener('click', (e) => {
-        let clickedEl = e.target;
-        let container = clickedEl.closest('div, section, td, .form-group') || clickedEl;
-        let titleText = (container.innerText || container.textContent || "").trim();
-        let lessonData = getMatchingLessonData();
-
-        if (titleText.includes("التهيئة")) {
-            injectTextToTarget(container, lessonData.warmup);
-        } else if (titleText.includes("مفردات الدرس")) {
-            injectTextToTarget(container, lessonData.terms);
-        } else if (titleText.includes("مهارات التفكير")) {
-            injectTextToTarget(container, lessonData.thinking);
-        } else if (titleText.includes("إغلاق الدرس")) {
-            injectTextToTarget(container, lessonData.closing);
-        } else if (clickedEl.isContentEditable || clickedEl.tagName === 'TEXTAREA') {
-            injectTextToTarget(clickedEl, lessonData.notes);
-        }
-    }, true);
+function findSectionByTitle(titleKey) {
+    let containers = Array.from(document.querySelectorAll('div, section, td, .form-group'));
+    return containers.find(el => {
+        let text = el.innerText || el.textContent || "";
+        return text.includes(titleKey);
+    });
 }
 
 /**
- * تعبئة جميع خانات ومفردات الشاشة بضغطة زر
+ * تعبئة كافة الخانات + معالجة إضافة الإثراء التلقائي
  */
-function fillAllScienceEditorsOnPage() {
+async function fillAllScienceEditorsAndEnrichments() {
     let lessonData = getMatchingLessonData();
-    let sections = Array.from(document.querySelectorAll('div, section, td, .form-group'));
+    const btn = document.getElementById('btnFillEntirePage');
+    if (btn) btn.innerText = "جاري تعبئة الخانات وإدراج الإثراء... ⏳";
 
-    sections.forEach(sec => {
-        let txt = (sec.innerText || sec.textContent || "").trim();
+    // 1. تعبئة "مهارات التفكير"
+    let thinkingBox = findSectionByTitle("مهارات التفكير");
+    if (thinkingBox) injectTextToTarget(thinkingBox, lessonData.thinking);
 
-        if (txt.includes("التهيئة") && !txt.includes("مكتمل")) {
-            injectTextToTarget(sec, lessonData.warmup);
-        }
-        if (txt.includes("مفردات الدرس")) {
-            injectTextToTarget(sec, lessonData.terms);
-        }
-        if (txt.includes("مهارات التفكير")) {
-            injectTextToTarget(sec, lessonData.thinking);
-        }
-        if (txt.includes("إغلاق الدرس")) {
-            injectTextToTarget(sec, lessonData.closing);
-        }
+    // 2. تعبئة "إغلاق الدرس"
+    let closingBox = findSectionByTitle("إغلاق الدرس");
+    if (closingBox) injectTextToTarget(closingBox, lessonData.closing);
+
+    // 3. تعبئة "مفردات الدرس"
+    let termsBox = findSectionByTitle("مفردات الدرس");
+    if (termsBox) injectTextToTarget(termsBox, lessonData.terms);
+
+    // 4. تعبئة "التهيئة"
+    let warmupBox = findSectionByTitle("التهيئة");
+    if (warmupBox) injectTextToTarget(warmupBox, lessonData.warmup);
+
+    // 5. الضغط على زر إضافة إثراء وإدخال بيانات الإثراء المنهجي
+    let addEnrichmentBtn = Array.from(document.querySelectorAll('button, a')).find(b => {
+        let txt = b.innerText || "";
+        return txt.includes("إضافة إثراء") || txt.includes("اختيار إثراء");
     });
 
-    // تعبئة حقل الملاحظات العام
-    document.querySelectorAll('textarea').forEach(ta => {
-        if (!ta.value) {
-            ta.value = lessonData.notes;
-            ta.dispatchEvent(new Event('input', { bubbles: true }));
-            ta.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-    });
+    if (addEnrichmentBtn) {
+        addEnrichmentBtn.click();
+        await delay(1200); // انتظار فتح النافذة المنبثقة
 
-    // تحديد خيارات التقنيات والوسائط
+        // تعبئة حقول الإثراء داخل النافذة
+        let nameInput = document.querySelector('input[name*="Name"], input[id*="Name"], input[placeholder*="اسم الإثراء"]');
+        let urlInput = document.querySelector('input[name*="Url"], input[id*="Url"], input[placeholder*="رابط"]');
+
+        if (nameInput) {
+            nameInput.value = lessonData.enrichmentTitle;
+            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (urlInput) {
+            urlInput.value = lessonData.enrichmentUrl;
+            urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        await delay(800);
+
+        // الضغط على زر حفظ الإثراء داخل النافذة
+        let saveModalBtn = Array.from(document.querySelectorAll('.modal button, .modal input[type="submit"]')).find(b => {
+            let txt = b.innerText || "";
+            return txt.includes("حفظ") || txt.includes("إضافة");
+        });
+        if (saveModalBtn) saveModalBtn.click();
+    }
+
+    // 6. تحديد الوسائط الاجتماعية
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         if (!cb.checked) {
             cb.click();
@@ -214,12 +189,11 @@ function fillAllScienceEditorsOnPage() {
         }
     });
 
-    const btn = document.getElementById('btnFillEntirePage');
     if (btn) {
-        btn.innerText = "✅ تم جلب وتعبئة مفردات المنهج بنجاح!";
+        btn.innerText = "✅ تم تعبئة المكونات وإضافة الإثراء بنجاح!";
         btn.style.background = "#059669";
         setTimeout(() => {
-            btn.innerText = "⚡ تعبئة مفردات ونصوص الدرس الآن";
+            btn.innerText = "⚡ تعبئة الخانات وإدراج الإثراء الآن";
             btn.style.background = "#10b981";
         }, 2500);
     }
