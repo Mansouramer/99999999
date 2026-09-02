@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة سحب حصص العلوم الظاهرة فقط مع الفحص المباشر للأزرار
+ * أداة سحب حصص علوم الصف الأول (الصف الأول 1، 2، 3، 4...)
  * ===================================================
  */
 
@@ -18,33 +18,39 @@ function initPrepTool() {
 }
 
 /**
- * دالة جلب أزرار إعداد الدرس النشطة والظاهرة فقط في الشاشة
+ * دالة جلب بطاقات حصص علوم الصف الأول بأي رقم فصل (1، 2، 3...)
  */
-function getActiveSciencePrepButtons() {
-    // 1. البحث حصراً عن العناصر التي تحمل النص "إعداد الدرس الآن" أو "إعداد الدرس"
-    let allPrepButtons = Array.from(document.querySelectorAll('a, button, div, span')).filter(el => {
-        const text = (el.innerText || el.textContent || "").trim();
-        const isPrepBtnText = text === "إعداد الدرس الآن" || text === "إعداد الدرس";
-        const isDirectNode = el.children.length <= 1; // عدم اختيار الكروت الكبيرة الحاوية
-        
-        // فحص أبعاد العنصر للتحقق من ظهوره الفعلي في الشاشة المعروضة
+function getGrade1ScienceCards() {
+    let allCards = Array.from(document.querySelectorAll('div, a, button, td, .card, [class*="card"]'));
+
+    let matchingCards = allCards.filter(el => {
+        let text = (el.innerText || el.textContent || "").trim();
+
+        // 1. التثبت من وجود كلمة العلوم
+        let hasScience = text.includes("العلوم") || text.includes("علوم");
+
+        // 2. مطابقة الصف الأول مع كافة أرقام الفصول (الصف الأول 1، الصف الأول 2... إلخ)
+        let hasGrade1Pattern = /الصف\s+الأول\s*\d*/i.test(text) || text.includes("الصف الأول") || text.includes("الأول");
+
+        // 3. التثبت من أبعاد العنصر وظهوره الفعلي على الشاشة
         const rect = el.getBoundingClientRect();
-        const isVisibleOnScreen = rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) + 300;
+        let isVisibleOnScreen = rect.width > 0 && rect.height > 0 && rect.top >= -100 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) + 300;
 
-        return isPrepBtnText && isDirectNode && isVisibleOnScreen;
+        // 4. استبعاد العناصر الحاوية الكبيرة جداً
+        let isDirectCardNode = text.length < 100 && el.children.length <= 4;
+
+        return hasScience && hasGrade1Pattern && isDirectCardNode && isVisibleOnScreen;
     });
 
-    // 2. فلترة الأزرار التابعة لحصص علوم الصف الأول
-    return allPrepButtons.filter(btn => {
-        let card = btn.closest('.card') || btn.closest('[class*="card"]') || btn.parentElement?.parentElement || btn.parentElement;
-        if (card) {
-            let cardText = card.innerText || card.textContent || "";
-            let isScience = cardText.includes("العلوم") || cardText.includes("علوم");
-            let isGrade1 = cardText.includes("الصف الأول") || cardText.includes("الأول");
-            return isScience && isGrade1;
+    // تصفية العناصر المكررة
+    let uniqueCards = [];
+    matchingCards.forEach(card => {
+        if (!uniqueCards.some(existing => existing.contains(card) || card.contains(existing))) {
+            uniqueCards.push(card);
         }
-        return false;
     });
+
+    return uniqueCards;
 }
 
 function createScienceDynamicUI() {
@@ -61,13 +67,13 @@ function createScienceDynamicUI() {
 
     uiBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 علوم الصف الأول (الحصص الفعالة فقط)</h3>
+            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 علوم الصف الأول (جميع الفصول 1، 2...)</h3>
             <button id="btnCloseUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
         </div>
 
         <div style="margin-bottom:8px; display:flex; gap:6px;">
             <button id="btnFetchSchedule" style="flex:1; padding:6px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
-                🔄 قراءة الأزرار الظاهرة حالياً
+                🔄 قراءة الحصص الظاهرة
             </button>
             <button id="btnSendWeeklyPlan" style="flex:1; padding:6px; background:#8b5cf6; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
                 📢 نشر الخطة الأسبوعية
@@ -75,7 +81,7 @@ function createScienceDynamicUI() {
         </div>
 
         <div id="dynamicScheduleContainer">
-            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري قراءة أزرار الحصص المتاحة في الشاشة...</div>
+            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري مطابقة بطاقات العلوم للصف الأول...</div>
         </div>
 
         <div style="display:flex; gap:6px; align-items:center; margin-top:10px;">
@@ -128,27 +134,26 @@ function renderAvailableClasses() {
     const statusText = document.getElementById('prepStatusText');
     if (!container) return;
 
-    let activeButtons = getActiveSciencePrepButtons();
+    let cards = getGrade1ScienceCards();
 
-    if (activeButtons.length === 0) {
+    if (cards.length === 0) {
         container.innerHTML = `
             <div style="text-align:center; padding:12px; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#991b1b; font-size:11px;">
-                ⚠️ لا توجد أزرار "إعداد الدرس الآن" تابعة لعلوم الصف الأول في الشاشة الحالية.
+                ⚠️ لم يتم العثور على بطاقات لعلوم الصف الأول في الشاشة الحالية.
             </div>
         `;
-        if (statusText) statusText.innerText = "لم يتم العثور على أزرار متاحة";
+        if (statusText) statusText.innerText = "لم يتم العثور على حصص متاحة";
         return;
     }
 
     let rowsHTML = '';
-    activeButtons.forEach((btn, idx) => {
-        let card = btn.closest('.card') || btn.closest('[class*="card"]') || btn.parentElement?.parentElement;
-        let cardText = card ? card.innerText.replace(/\n/g, ' - ').trim() : `حصة علوم (${idx + 1})`;
+    cards.forEach((card, idx) => {
+        let cardText = card.innerText.replace(/\n/g, ' - ').trim();
 
         rowsHTML += `
             <tr style="border-bottom: 1px solid #e2e8f0;">
                 <td style="padding:6px; font-weight:bold; font-size:10px; color:#0369a1; width:50%;">${cardText}</td>
-                <td style="padding:6px; font-size:10px; color:#059669; width:50%;">📌 زر جاهز للسحب والتحضير</td>
+                <td style="padding:6px; font-size:10px; color:#059669; width:50%;">📌 بطاقة مجهزة للسحب والتحضير</td>
             </tr>
         `;
     });
@@ -157,8 +162,8 @@ function renderAvailableClasses() {
         <table style="width:100%; border-collapse:collapse; margin-bottom:5px; text-align:right;">
             <thead>
                 <tr style="background:#f0f9ff; font-size:11px; color:#0369a1;">
-                    <th style="padding:6px;">الحصة النشطة</th>
-                    <th style="padding:6px;">حالة الزر</th>
+                    <th style="padding:6px;">الحصة المستهدفة</th>
+                    <th style="padding:6px;">الحالة</th>
                 </tr>
             </thead>
             <tbody>
@@ -167,7 +172,7 @@ function renderAvailableClasses() {
         </table>
     `;
 
-    if (statusText) statusText.innerText = `تم حصر (${activeButtons.length}) أزرار مجهزة للتحضير الآن!`;
+    if (statusText) statusText.innerText = `تم العثور على (${cards.length}) حصص لعلوم الصف الأول!`;
 }
 
 function updateUIStatus(isRunning) {
@@ -224,18 +229,21 @@ function runAutomationEngine() {
 
         const currentUrl = window.location.href;
 
-        // 1. الضغط على زر "إعداد الدرس الآن" النشط في الصفحة
+        // 1. الشاشة الرئيسية: فتح بطاقة حصة العلوم المتاحة
         if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule") || !document.querySelector('select')) {
             await delay(1500);
 
-            let activeButtons = getActiveSciencePrepButtons();
+            let cards = getGrade1ScienceCards();
             let currentIndex = data.currentPeriodIndex || 0;
 
-            if (activeButtons.length > currentIndex) {
+            if (cards.length > currentIndex) {
                 await delay(1000);
-                activeButtons[currentIndex].click();
+
+                let innerInteractive = cards[currentIndex].querySelector('a, button, div, span');
+                if (innerInteractive) innerInteractive.click();
+                else cards[currentIndex].click();
             } else {
-                alert("🎉 تم الانتهاء من تحضير الأزرار الظاهرة في الصفحة بنجاح!");
+                alert("🎉 تم الانتهاء من تحضير جميع حصص علوم الصف الأول الظاهرة بنجاح!");
                 chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
                 updateUIStatus(false);
             }
@@ -275,7 +283,7 @@ function runAutomationEngine() {
             if (nextBtn) nextBtn.click();
         } 
         
-        // 3. الشاشة الثانية: التكليفات والإثراءات بناءً على الدرس المسحوب ثم الحفظ
+        // 3. الشاشة الثانية: تعبئة التكليفات والإثراءات بناءً على الدرس المسحوب ثم الحفظ
         else if (document.querySelector('textarea') || document.querySelector('button[type="submit"]') || document.querySelector('#btnSave')) {
             await delay(2000);
 
