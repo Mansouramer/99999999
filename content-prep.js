@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة علوم الصف الأول - تحديد الدرس يدويًا والأداة تكمل الباقي
+ * أداة علوم الصف الأول - الوصول التلقائي لآخر مستوى في الدرس
  * ===================================================
  */
 
@@ -17,9 +17,6 @@ function initPrepTool() {
     runAutomationEngine();
 }
 
-/**
- * جلب حصص علوم الصف الأول الظاهرة في الشاشة
- */
 function getGrade1ScienceCards() {
     const uiBox = document.getElementById('prep-schedule-ui');
     let allCards = Array.from(document.querySelectorAll('div, a, button, td, .card, [class*="card"]'));
@@ -28,7 +25,6 @@ function getGrade1ScienceCards() {
         if (uiBox && uiBox.contains(el)) return false;
 
         let text = (el.innerText || el.textContent || "").trim();
-
         let hasScience = text.includes("العلوم") || text.includes("علوم");
         let hasGrade1 = text.includes("الصف الأول") || text.includes("الأول");
         let isSystemText = text.includes("إغلاق") || text.includes("جاري") || text.includes("خطة التعلم");
@@ -50,9 +46,6 @@ function getGrade1ScienceCards() {
     return uniqueCards;
 }
 
-/**
- * بناء الواجهة لتحديد الدرس يدويًا لكل حصة
- */
 function createManualInputScienceUI() {
     if (document.getElementById('prep-schedule-ui')) return;
 
@@ -67,7 +60,7 @@ function createManualInputScienceUI() {
 
     uiBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 تحديد دروس العلوم (الصف الأول)</h3>
+            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 تحديد دروس العلوم (التسلسل المكتمل)</h3>
             <button id="btnCloseUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
         </div>
 
@@ -81,18 +74,18 @@ function createManualInputScienceUI() {
         </div>
 
         <div id="dynamicScheduleContainer">
-            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري مطابقة الحصص لاختيار الدروس...</div>
+            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري جلب الحصص المتاحة...</div>
         </div>
 
         <div style="display:flex; gap:6px; align-items:center; margin-top:10px;">
             <button id="btnStartBulkPrep" style="flex:1; padding:10px; background:#10b981; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">
-                🚀 اعتماد الدروس وإكمال التحضير الآلي
+                🚀 اعتماد الدرس واستهداف أعمق مستوى
             </button>
             <button id="btnStopPrep" style="padding:10px; background:#ef4444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:none;">
                 ⏹ إيقاف
             </button>
         </div>
-        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">اختر الدرس لكل حصة ثم اضغط اعتماد وإكمال التحضير</div>
+        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">اختر الدرس لكل حصة ثم اضغط بدء التحضير</div>
     `;
 
     document.body.appendChild(uiBox);
@@ -163,15 +156,15 @@ function renderAvailableClasses() {
     }
 
     const grade1ScienceLessons = [
-        "المخلوقات الحية وحاجاتها",
+        "المخلوقات الحية",
         "النباتات وأجزاؤها",
-        "الفيزيائية والحركة",
+        "الحيوانات وحاجاتها",
+        "النمو والتغير",
         "الطقس وفصول السنة",
-        "المادة وحالاتها",
-        "الأرض ومواردها"
+        "المادة وحالاتها"
     ];
 
-    let optionsHTML = `<option value="">-- اختر الدرس للحصة --</option>`;
+    let optionsHTML = `<option value="">-- اختر الدرس الأخير للحصة --</option>`;
     grade1ScienceLessons.forEach(lesson => {
         optionsHTML += `<option value="${lesson}">${lesson}</option>`;
     });
@@ -196,8 +189,8 @@ function renderAvailableClasses() {
         <table style="width:100%; border-collapse:collapse; margin-bottom:5px; text-align:right;">
             <thead>
                 <tr style="background:#f0f9ff; font-size:11px; color:#0369a1;">
-                    <th style="padding:6px;">الحصة المستهدفة</th>
-                    <th style="padding:6px;">حدد الدرس الذي تريد تحضيره</th>
+                    <th style="padding:6px;">الحصة</th>
+                    <th style="padding:6px;">الدرس المستهدف (المستوى الأخير)</th>
                 </tr>
             </thead>
             <tbody>
@@ -206,7 +199,7 @@ function renderAvailableClasses() {
         </table>
     `;
 
-    if (statusText) statusText.innerText = `حدد الدرس للحصص المتاحة (${cards.length}) ثم اضغط إكمال التحضير.`;
+    if (statusText) statusText.innerText = `حدد الدرس للحصص المتاحة (${cards.length}) ثم اضغط بدء التحضير.`;
 }
 
 function updateUIStatus(isRunning) {
@@ -217,7 +210,7 @@ function updateUIStatus(isRunning) {
     if (isRunning) {
         if (startBtn) startBtn.style.display = 'none';
         if (stopBtn) stopBtn.style.display = 'block';
-        if (statusText) statusText.innerText = "جاري تنفيذ خطوات التعبئة والحفظ بناءً على اختياراتك... ⏳";
+        if (statusText) statusText.innerText = "جاري تتبع القوائم المنسدلة للوصول للدرس الأخير... ⏳";
     } else {
         if (startBtn) startBtn.style.display = 'block';
         if (stopBtn) stopBtn.style.display = 'none';
@@ -263,7 +256,7 @@ function runAutomationEngine() {
 
         const currentUrl = window.location.href;
 
-        // 1. الشاشة الرئيسية: فتح كارت الحصة المحددة
+        // 1. الشاشة الرئيسية: فتح كارت الحصة
         if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule") || !document.querySelector('select')) {
             await delay(1500);
 
@@ -276,43 +269,50 @@ function runAutomationEngine() {
                 if (innerInteractive) innerInteractive.click();
                 else cards[currentIndex].click();
             } else {
-                alert("🎉 تم الانتهاء من إكمال تحضير كافة الحصص بنجاح!");
+                alert("🎉 تم الانتهاء من تحضير جميع الحصص بنجاح!");
                 chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
                 updateUIStatus(false);
             }
         } 
         
-        // 2. الشاشة الأولى: اختيار الدرس الذي اخترته في القوائم المنسدلة
+        // 2. الشاشة الأولى: التدرج المباشر عبر شجرة القوائم المنسدلة للوصول إلى المستوى الأخير (الدرس)
         else if (document.querySelector('select') && !document.querySelector('#btnSave, button[type="submit"]')) {
             await delay(2000);
 
             let periodKey = `p${(data.currentPeriodIndex || 0) + 1}`;
             let periodData = (data.scheduleConfig && data.scheduleConfig[periodKey]) ? data.scheduleConfig[periodKey] : {};
-            let selectedLesson = periodData.lesson || "";
+            let targetLesson = periodData.lesson || "";
 
-            let selects = document.querySelectorAll('select');
-            
-            for (let sel of selects) {
-                if (selectedLesson) {
+            let selects = Array.from(document.querySelectorAll('select'));
+
+            for (let i = 0; i < selects.length; i++) {
+                let sel = selects[i];
+
+                // إذا وصلنا إلى المستوى الأخير وكان هناك درس محدد يدويًا
+                if (i === selects.length - 1 && targetLesson) {
                     let matched = false;
                     Array.from(sel.options).forEach((opt, idx) => {
-                        if (opt.text.includes(selectedLesson)) {
+                        if (opt.text.includes(targetLesson)) {
                             sel.selectedIndex = idx;
                             sel.dispatchEvent(new Event('change', { bubbles: true }));
                             matched = true;
                         }
                     });
-                    if (!matched && sel.options.length > 1 && sel.selectedIndex === 0) {
+                    if (!matched && sel.options.length > 1) {
                         sel.selectedIndex = 1;
                         sel.dispatchEvent(new Event('change', { bubbles: true }));
                     }
-                } else if (sel.options.length > 1 && sel.selectedIndex === 0) {
-                    sel.selectedIndex = 1;
-                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    // اختيار الخيار التلقائي الأول المتاح لتفتيت الشجرة
+                    if (sel.options.length > 1 && sel.selectedIndex === 0) {
+                        sel.selectedIndex = 1;
+                        sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                 }
-                await delay(500);
+                await delay(800); // مهلة زمنية لتحميل القائمة المنسدلة التالية
             }
 
+            // تحديد النمط غير المتزامن
             let asyncRadio = document.querySelector('input[type="radio"][value*="غير متزامن"], input[type="radio"][id*="Async"]');
             if (asyncRadio) asyncRadio.click();
 
@@ -326,7 +326,7 @@ function runAutomationEngine() {
             if (nextBtn) nextBtn.click();
         } 
         
-        // 3. الشاشة الثانية: الأداة تكمل إضافة الإثراء والتكليفات والملاحظات والحفظ
+        // 3. الشاشة الثانية: تعبئة التكليفات والملاحظات والحفظ
         else if (document.querySelector('textarea') || document.querySelector('button[type="submit"]') || document.querySelector('#btnSave')) {
             await delay(2000);
 
