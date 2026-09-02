@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة علوم الصف الأول - دعم فصول (الصف الأول 1، 2، 3، 4...)
+ * أداة علوم الصف الأول - التقيد بالحصص الظاهرة في الشاشة فقط
  * ===================================================
  */
 
@@ -18,25 +18,50 @@ function initPrepTool() {
 }
 
 /**
- * دالة جلب كروت حصص علوم الصف الأول الفعالة (بما فيها الصف الأول 1، 2، 4...)
+ * دالة للتحقق من أن العنصر ظاهر فعلياً على شاشة الجوال الحالية
+ */
+function isElementVisibleOnScreen(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+        return false;
+    }
+    const rect = el.getBoundingClientRect();
+    // التأكد من وجود مساحة حقيقية للعنصر
+    return rect.width > 0 && rect.height > 0;
+}
+
+/**
+ * جلب الحصص الظاهرة فقط في الشاشة الحالية وتجاهل المخبأة
  */
 function getGrade1ScienceCards() {
-    // 1. البحث عن جميع العناصر الحاوية للكروت
-    let allElements = Array.from(document.querySelectorAll('div, a, button, td, .card, [class*="card"]'));
+    // جلب العناصر الحاوية للكروت
+    let allCards = Array.from(document.querySelectorAll('div, a, button, td, .card, [class*="card"]'));
 
-    return allElements.filter(el => {
+    let filteredCards = allCards.filter(el => {
         let text = (el.innerText || el.textContent || "").trim();
 
-        // التثبت من وجود كلمة العلوم وتحديد الصف الأول مع اختلاف الرقم الملحق
         let hasScience = text.includes("العلوم") || text.includes("علوم");
         let hasGrade1 = text.includes("الصف الأول") || text.includes("الأول");
         
-        // التثبت من أن العنصر مباشر (كارت حصة) وليس الصفحة بأكملها
-        let isCardElement = text.length < 150 && el.children.length <= 5;
-        let isVisible = el.offsetWidth > 0 && el.offsetHeight > 0 && window.getComputedStyle(el).display !== 'none';
+        // اقتصار الفحص على بطاقة الحصة المباشرة
+        let isDirectCard = text.length < 120 && el.children.length <= 4;
+        
+        // فحص الظهور الفعلي على الشاشة
+        let isVisible = isElementVisibleOnScreen(el);
 
-        return hasScience && hasGrade1 && isCardElement && isVisible;
+        return hasScience && hasGrade1 && isDirectCard && isVisible;
     });
+
+    // إزالة التكرار الناتج عن الأنساب والأبناء
+    let uniqueCards = [];
+    filteredCards.forEach(card => {
+        if (!uniqueCards.some(existing => existing.contains(card) || card.contains(existing))) {
+            uniqueCards.push(card);
+        }
+    });
+
+    return uniqueCards;
 }
 
 function createGrade1ScienceUI() {
@@ -53,13 +78,13 @@ function createGrade1ScienceUI() {
 
     uiBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 علوم الصف الأول الابتدائي</h3>
+            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 علوم الصف الأول (الحصص الظاهرة فقط)</h3>
             <button id="btnCloseUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
         </div>
 
         <div style="margin-bottom:8px; display:flex; gap:6px;">
             <button id="btnFetchSchedule" style="flex:1; padding:6px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
-                🔄 قراءة الحصص المتاحة
+                🔄 قراءة الحصص الظاهرة حالياً
             </button>
             <button id="btnSendWeeklyPlan" style="flex:1; padding:6px; background:#8b5cf6; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
                 📢 نشر الخطة الأسبوعية
@@ -67,7 +92,7 @@ function createGrade1ScienceUI() {
         </div>
 
         <div id="dynamicScheduleContainer">
-            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري البحث عن حصص العلوم للصف الأول...</div>
+            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري قراءة الحصص المعروضة في الشاشة...</div>
         </div>
 
         <div style="display:flex; gap:6px; align-items:center; margin-top:10px;">
@@ -127,7 +152,7 @@ function createGrade1ScienceUI() {
 }
 
 /**
- * دالة بناء جدول الحصص المتاحة (الصف الأول 1، 2، 4...)
+ * عرض الحصص المعروضة فقط
  */
 function renderAvailableClasses() {
     const container = document.getElementById('dynamicScheduleContainer');
@@ -139,10 +164,10 @@ function renderAvailableClasses() {
     if (cards.length === 0) {
         container.innerHTML = `
             <div style="text-align:center; padding:12px; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#991b1b; font-size:11px;">
-                ⚠️ لم يتم العثور على حصص لعلوم الصف الأول في هذه الشاشة.
+                ⚠️ لم يتم العثور على حصص علوم مجهزة في الشاشة الحالية.
             </div>
         `;
-        if (statusText) statusText.innerText = "لم يتم العثور على حصص متاحة";
+        if (statusText) statusText.innerText = "لا توجد حصص ظاهرة للتحضير";
         return;
     }
 
@@ -155,7 +180,7 @@ function renderAvailableClasses() {
         "الأرض ومواردها"
     ];
 
-    let optionsHTML = `<option value="">-- اختر درس العلوم للحصة --</option>`;
+    let optionsHTML = `<option value="">-- اختر درس العلوم --</option>`;
     grade1ScienceLessons.forEach(lesson => {
         optionsHTML += `<option value="${lesson}">${lesson}</option>`;
     });
@@ -166,8 +191,8 @@ function renderAvailableClasses() {
 
         rowsHTML += `
             <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding:6px; font-weight:bold; font-size:10px; color:#0369a1; width:40%;">${cardText}</td>
-                <td style="padding:4px; width:60%;">
+                <td style="padding:6px; font-weight:bold; font-size:10px; color:#0369a1; width:45%;">${cardText}</td>
+                <td style="padding:4px; width:55%;">
                     <select class="dynamic-lesson-select" id="lesson_p${idx + 1}" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; background:#fff;">
                         ${optionsHTML}
                     </select>
@@ -180,7 +205,7 @@ function renderAvailableClasses() {
         <table style="width:100%; border-collapse:collapse; margin-bottom:5px; text-align:right;">
             <thead>
                 <tr style="background:#f0f9ff; font-size:11px; color:#0369a1;">
-                    <th style="padding:6px;">الحصة المتاحة</th>
+                    <th style="padding:6px;">الحصة الظاهرة</th>
                     <th style="padding:6px;">درس العلوم</th>
                 </tr>
             </thead>
@@ -190,7 +215,7 @@ function renderAvailableClasses() {
         </table>
     `;
 
-    if (statusText) statusText.innerText = `تم التعرف على (${cards.length}) حصص لعلوم الصف الأول!`;
+    if (statusText) statusText.innerText = `تم التقيد بـ (${cards.length}) حصص معروضة في الصفحة حالياً!`;
 }
 
 function updateUIStatus(isRunning) {
@@ -214,7 +239,7 @@ function runAutomationEngine() {
 
         const currentUrl = window.location.href;
 
-        // 1. الضغط على الكارت المباشر للحصة
+        // 1. الضغط على الكارت
         if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule") || !document.querySelector('select')) {
             await delay(1500);
 
@@ -224,17 +249,16 @@ function runAutomationEngine() {
             if (cards.length > currentIndex) {
                 await delay(1000);
 
-                // البحث عن زر إعداد داخل الكارت أو الضغط على الكارت مباشرة
                 let innerBtn = cards[currentIndex].querySelector('a, button, div');
                 if (innerBtn) innerBtn.click();
                 else cards[currentIndex].click();
             } else {
-                alert("🎉 تم الانتهاء من تحضير جميع الحصص المحددة بنجاح!");
+                alert("🎉 تم الانتهاء من تحضير جميع الحصص المعروضة في الشاشة بنجاح!");
                 chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
                 updateUIStatus(false);
             }
         } 
-        // 2. الشاشة الأولى (تحديد المسار والدرس)
+        // 2. الشاشة الأولى (المسار والدرس)
         else if (document.querySelector('select') && !document.querySelector('#btnSave, button[type="submit"]')) {
             await delay(2000);
 
