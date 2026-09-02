@@ -1,85 +1,80 @@
 /**
  * ===================================================
- * أداة علوم الصف الأول - دعم المحررات المتقدمة (CKEditor / contenteditable)
+ * أداة علوم الصف الأول - تعبئة الحقول بالنقر أو بضغطة زر
  * ===================================================
  */
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAutoObserver);
+    document.addEventListener('DOMContentLoaded', initManualFiller);
 } else {
-    initAutoObserver();
+    initManualFiller();
 }
 
-function initAutoObserver() {
-    createMiniStatusUI();
-    autoProcessCurrentPage();
+function initManualFiller() {
+    createTriggerBar();
+    enableClickToFillListener();
 }
 
-function createMiniStatusUI() {
-    if (document.getElementById('prep-mini-ui')) return;
+/**
+ * شريط تعبئة أعلى الصفحة بضغطة واحدة
+ */
+function createTriggerBar() {
+    if (document.getElementById('manual-filler-bar')) return;
 
-    const uiBox = document.createElement('div');
-    uiBox.id = 'prep-mini-ui';
-    uiBox.style.cssText = `
-        position: fixed; top: 10px; left: 3%; right: 3%; z-index: 999999;
+    const bar = document.createElement('div');
+    bar.id = 'manual-filler-bar';
+    bar.style.cssText = `
+        position: fixed; top: 10px; left: 3%; right: 3%; z-index: 9999999;
         background: #0284c7; color: #ffffff; padding: 8px 14px;
-        border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         font-family: system-ui, sans-serif; font-size: 11px; font-weight: bold;
         display: flex; justify-content: space-between; align-items: center; direction: rtl;
     `;
 
-    uiBox.innerHTML = `
-        <span>🔬 أداة التعبئة المباشرة (محررات مدرستي)</span>
-        <button id="btnManualTrigger" style="background:#10b981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">⚡ اضغط للتعبئة الفورية</button>
+    bar.innerHTML = `
+        <span>✍️ مساعد التعبئة: اضغط على أي حقل لتعبئته أو تعبئة الصفحة كاملاً</span>
+        <button id="btnFillEntirePage" style="background:#10b981; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">
+            ⚡ تعبئة كل خانات الصفحة الآن
+        </button>
     `;
 
-    document.body.appendChild(uiBox);
+    document.body.appendChild(bar);
 
-    document.getElementById('btnManualTrigger').addEventListener('click', () => {
-        autoProcessCurrentPage(true);
+    document.getElementById('btnFillEntirePage').addEventListener('click', () => {
+        fillAllEditorsOnPage();
     });
 }
 
-function updateStatusLabel(text, bgColor = "#0369a1") {
-    const btn = document.getElementById('btnManualTrigger');
-    if (btn) {
-        btn.innerText = text;
-        btn.style.background = bgColor;
-    }
-}
-
 /**
- * الكتابة داخل المحررات المتقدمة (CKEditor / contenteditable / iframe)
+ * الكتابة المباشرة في محررات مدرستي المتقدمة
  */
-function writeToRichEditor(targetContainer, textValue) {
-    if (!targetContainer) return false;
+function injectTextToTarget(targetElement, defaultText) {
+    if (!targetElement) return false;
 
-    // 1. فحص وجود عنصر contenteditable داخل المنطقة
-    let editableDiv = targetContainer.querySelector('[contenteditable="true"]') || targetContainer.querySelector('.ck-editor__editable');
+    // 1. التعامل مع محررات contenteditable المتقدمة
+    let editableDiv = targetElement.isContentEditable ? targetElement : 
+                      targetElement.querySelector('[contenteditable="true"]') || targetElement.querySelector('.ck-editor__editable');
     if (editableDiv) {
-        editableDiv.innerHTML = `<p>${textValue}</p>`;
+        editableDiv.innerHTML = `<p>${defaultText}</p>`;
         editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
         editableDiv.dispatchEvent(new Event('change', { bubbles: true }));
         return true;
     }
 
-    // 2. فحص وجود iframe (المحررات التقليدية)
-    let iframe = targetContainer.querySelector('iframe');
-    if (iframe && iframe.contentDocument) {
-        let body = iframe.contentDocument.body;
-        if (body) {
-            body.innerHTML = `<p>${textValue}</p>`;
-            body.dispatchEvent(new Event('input', { bubbles: true }));
-            return true;
-        }
+    // 2. التعامل مع محررات iframe
+    let iframe = targetElement.tagName === 'IFRAME' ? targetElement : targetElement.querySelector('iframe');
+    if (iframe && iframe.contentDocument && iframe.contentDocument.body) {
+        iframe.contentDocument.body.innerHTML = `<p>${defaultText}</p>`;
+        iframe.contentDocument.body.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
     }
 
-    // 3. فحص وجود textarea عادي
-    let textarea = targetContainer.querySelector('textarea');
+    // 3. التعامل مع textarea المباشرة
+    let textarea = targetElement.tagName === 'TEXTAREA' ? targetElement : targetElement.querySelector('textarea');
     if (textarea) {
-        textarea.value = textValue;
+        textarea.value = defaultText;
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
         textarea.dispatchEvent(new Event('change', { bubbles: true }));
         return true;
@@ -89,66 +84,70 @@ function writeToRichEditor(targetContainer, textValue) {
 }
 
 /**
- * المحرك الرئيسي لتعبئة صفحة المكونات والوسائط
+ * ميزة التعبئة بالنقر المباشر على الحقل
  */
-async function autoProcessCurrentPage(isManual = false) {
-    await delay(1000);
-    updateStatusLabel("جاري التعبئة... ⏳", "#d97706");
+function enableClickToFillListener() {
+    document.addEventListener('click', (e) => {
+        let clickedEl = e.target;
+        
+        // البحث عن الحاوية أو الحقل المهرّر
+        let container = clickedEl.closest('div, section, td, .form-group') || clickedEl;
+        let titleText = (container.innerText || container.textContent || "").trim();
 
-    let filledCount = 0;
-
-    // البحث عن جميع الأقسام الحاوية للخانات
-    let allSections = Array.from(document.querySelectorAll('div, section, td, .form-group'));
-
-    allSections.forEach(sec => {
-        let titleText = (sec.innerText || sec.textContent || "").trim();
-
-        // 1. تعبئة التهيئة
-        if (titleText.includes("التهيئة") && !titleText.includes("مكتمل")) {
-            if (writeToRichEditor(sec, "التمهيد للدرس بعرض الصور التفاعلية والعينات الاستكشافية لمادة العلوم.")) filledCount++;
+        if (titleText.includes("التهيئة")) {
+            injectTextToTarget(container, "التمهيد للدرس بعرض الصور التفاعلية والعينات الاستكشافية لمادة العلوم.");
+        } else if (titleText.includes("مفردات الدرس")) {
+            injectTextToTarget(container, "المخلوقات الحية، الأشياء غير الحية، النمو، التغذية.");
+        } else if (titleText.includes("مهارات التفكير")) {
+            injectTextToTarget(container, "الملاحظة، المقارنة، والتصنيف للتمييز بين الكائنات الحية والغير حية.");
+        } else if (titleText.includes("إغلاق الدرس")) {
+            injectTextToTarget(container, "مراجعة المفاهيم الأساسية للدرس وتأكيد تحقيق أهداف الحصة.");
+        } else if (clickedEl.isContentEditable || clickedEl.tagName === 'TEXTAREA') {
+            injectTextToTarget(clickedEl, "متابعة تطبيق المهارات والحلول المحددة لدرس العلوم في كتاب الطالب.");
         }
+    }, true);
+}
 
-        // 2. تعبئة مفردات الدرس
-        if (titleText.includes("مفردات الدرس")) {
-            if (writeToRichEditor(sec, "المخلوقات الحية، الأشياء غير الحية، النمو، التغذية.")) filledCount++;
+/**
+ * تعبئة كافة الحقول المفتوحة في الصفحة دفعة واحدة
+ */
+function fillAllEditorsOnPage() {
+    let sections = Array.from(document.querySelectorAll('div, section, td, .form-group'));
+    let count = 0;
+
+    sections.forEach(sec => {
+        let txt = (sec.innerText || sec.textContent || "").trim();
+
+        if (txt.includes("التهيئة") && !txt.includes("مكتمل")) {
+            if (injectTextToTarget(sec, "التمهيد للدرس بعرض الصور التفاعلية والعينات الاستكشافية لمادة العلوم.")) count++;
         }
-
-        // 3. تعبئة مهارات التفكير
-        if (titleText.includes("مهارات التفكير")) {
-            if (writeToRichEditor(sec, "الملاحظة، المقارنة، والتصنيف للتمييز بين الكائنات الحية والغير حية.")) filledCount++;
+        if (txt.includes("مفردات الدرس")) {
+            if (injectTextToTarget(sec, "المخلوقات الحية، الأشياء غير الحية، النمو، التغذية.")) count++;
         }
-
-        // 4. تعبئة إغلاق الدرس
-        if (titleText.includes("إغلاق الدرس")) {
-            if (writeToRichEditor(sec, "مراجعة المفاهيم الأساسية وتأكيد تحقيق أهداف الحصة.")) filledCount++;
+        if (txt.includes("مهارات التفكير")) {
+            if (injectTextToTarget(sec, "الملاحظة، المقارنة، والتصنيف للتمييز بين الكائنات الحية والغير حية.")) count++;
+        }
+        if (txt.includes("إغلاق الدرس")) {
+            if (injectTextToTarget(sec, "مراجعة المفاهيم الأساسية للدرس وتأكيد تحقيق أهداف الحصة.")) count++;
         }
     });
 
-    // 5. تحديد خيار الوسائط الاجتماعية إذا كان متاحاً
-    let mediaCheckboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-    if (mediaCheckboxes.length > 0) {
-        mediaCheckboxes.forEach(cb => {
-            if (!cb.checked) {
-                cb.click();
-                cb.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        });
-    }
-
-    // 6. الضغط على زر إضافة إثراء أو واجب إن وجد
-    let addBtn = Array.from(document.querySelectorAll('button, a')).find(b => {
-        let txt = b.innerText || "";
-        return txt.includes("إضافة إثراء") || txt.includes("إضافة واجب") || txt.includes("اختيار إثراء");
+    // تحديد خيارات الوسائط إذا وجدت
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (!cb.checked) {
+            cb.click();
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
     });
-    if (addBtn) {
-        addBtn.click();
-        await delay(1000);
-    }
 
-    if (filledCount > 0 || isManual) {
-        updateStatusLabel("✅ تم كتابة النماذج بنجاح!", "#059669");
-    } else {
-        updateStatusLabel("⚡ اضغط للتعبئة الفورية", "#10b981");
+    const btn = document.getElementById('btnFillEntirePage');
+    if (btn) {
+        btn.innerText = "✅ تم تعبئة الصفحة بنجاح!";
+        btn.style.background = "#059669";
+        setTimeout(() => {
+            btn.innerText = "⚡ تعبئة كل خانات الصفحة الآن";
+            btn.style.background = "#10b981";
+        }, 2000);
     }
 }
 
