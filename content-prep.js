@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة التحضير الشاملة (الفتح الفوري + تنبيه الـ 3 أيام)
+ * أداة التحضير الفورية (قوائم دروس العلوم المنسدلة)
  * ===================================================
  */
 
@@ -13,31 +13,20 @@ if (document.readyState === 'loading') {
 }
 
 function initPrepTool() {
-    // فتح الواجهة فوراً بمجرد فتح الصفحة/التطبيق
     createFullScheduleUI();
     runAutomationEngine();
 }
 
-/**
- * دالة التحقق مما إذا كانت الحصة تتجاوز 3 أيام من اليوم
- */
 function isMoreThan3DaysAhead(dateString) {
     if (!dateString) return false;
-    
-    // تحويل التاريخ وترتيب الفارق اليومي
     const classDate = new Date(dateString);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const diffTime = classDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+    const diffDays = Math.ceil((classDate - today) / (1000 * 60 * 60 * 24));
     return diffDays > 3;
 }
 
-/**
- * دالة التوليد الذكي لرابط الإثراء
- */
 function generateAutoEnrichmentUrl(lessonName) {
     if (lessonName.includes("طقس") || lessonName.includes("فصول") || lessonName.includes("مادة") || lessonName.includes("خلايا")) {
         return "https://ien.edu.sa/";
@@ -46,16 +35,10 @@ function generateAutoEnrichmentUrl(lessonName) {
     return `https://www.youtube.com/results?search_query=${cleanName}`;
 }
 
-/**
- * دالة التوليد الذكي للواجب المنزلي
- */
 function generateAutoHomeworkText(lessonName) {
     return `حل أسئلة مراجعة الدرس وتقويم المهارات لدرس (${lessonName}) في كتاب الطالب.`;
 }
 
-/**
- * إنشاء واجهة الجدول الشاملة وتجهيزها للظهور المباشر
- */
 function createFullScheduleUI() {
     if (document.getElementById('prep-schedule-ui')) return;
 
@@ -68,6 +51,37 @@ function createFullScheduleUI() {
         font-family: system-ui, sans-serif; direction: rtl; max-height: 88vh; overflow-y: auto;
     `;
 
+    // قائمة دروس العلوم والمواد المنسدلة الجاهزة
+    let scienceLessonsHTML = `
+        <option value="">-- (تلقائي) سحب الدرس من مدرستي --</option>
+        <optgroup label="🔬 علوم (الصفوف الأولية 1-3)">
+            <option value="الطقس وفصول السنة">الطقس وفصول السنة</option>
+            <option value="المخلوقات الحية وحاجاتها">المخلوقات الحية وحاجاتها</option>
+            <option value="المادة وحالاتها">المادة وحالاتها</option>
+            <option value="الأرض ومواردها">الأرض ومواردها</option>
+            <option value="الحركة والقوى">الحركة والقوى</option>
+        </optgroup>
+        <optgroup label="🧪 علوم (الصفوف العليا 4-6)">
+            <option value="الخلايا والأنسجة">الخلايا والأنسجة</option>
+            <option value="أجهزة جسم الإنسان">أجهزة جسم الإنسان</option>
+            <option value="الأنظمة البيئية">الأنظمة البيئية</option>
+            <option value="التغيرات الكيميائية والفيزيائية">التغيرات الكيميائية والفيزيائية</option>
+            <option value="الشمس والأرض والقمر">الشمس والأرض والقمر</option>
+            <option value="القوة والحركة والآلات البسيطة">القوة والحركة والآلات البسيطة</option>
+        </optgroup>
+        <optgroup label="📐 رياضيات (1-6)">
+            <option value="القيمة المنزلية">القيمة المنزلية</option>
+            <option value="الجمع والطرح">الجمع والطرح</option>
+            <option value="الضرب والقسمة">الضرب والقسمة</option>
+            <option value="الكسور والنسب">الكسور والنسب</option>
+        </optgroup>
+        <optgroup label="📗 لغتي الجميلة (1-6)">
+            <option value="حروفي وكلماتي">حروفي وكلماتي</option>
+            <option value="أسرتي ومدرستي">أسرتي ومدرستي</option>
+            <option value="قيم إسلامية ووطنية">قيم إسلامية ووطنية</option>
+        </optgroup>
+    `;
+
     let rowsHTML = '';
     for (let i = 1; i <= 7; i++) {
         rowsHTML += `
@@ -77,7 +91,9 @@ function createFullScheduleUI() {
                     <input type="date" id="date_p${i}" style="width:90%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc;" />
                 </td>
                 <td style="padding:4px;">
-                    <input type="text" id="lesson_p${i}" placeholder="(تلقائي) سحب الدرس من مدرستي" style="width:95%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc;" />
+                    <select id="lesson_p${i}" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; background:#fff;">
+                        ${scienceLessonsHTML}
+                    </select>
                 </td>
                 <td style="padding:4px;">
                     <input type="url" id="enrichment_p${i}" placeholder="توليد تلقائي للإثراء" style="width:95%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc;" />
@@ -88,7 +104,7 @@ function createFullScheduleUI() {
 
     uiBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="margin:0; color:#1e293b; font-size:14px;">⚡ لوحة التحضير الفورية (نطاق الـ 3 أيام)</h3>
+            <h3 style="margin:0; color:#1e293b; font-size:14px;">⚡ لوحة التحضير (دروس العلوم والصفوف 1-6)</h3>
             <button id="btnCloseUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
         </div>
         
@@ -97,7 +113,7 @@ function createFullScheduleUI() {
                 <tr style="background:#f1f5f9; font-size:11px; color:#475569;">
                     <th style="padding:6px; width:10%;">الحصة</th>
                     <th style="padding:6px; width:20%;">التاريخ</th>
-                    <th style="padding:6px; width:40%;">اسم الدرس (اختياري)</th>
+                    <th style="padding:6px; width:40%;">اختر الدرس</th>
                     <th style="padding:6px; width:30%;">رابط الإثراء</th>
                 </tr>
             </thead>
@@ -128,7 +144,6 @@ function createFullScheduleUI() {
         for (let i = 1; i <= 7; i++) {
             let pDate = document.getElementById(`date_p${i}`).value;
 
-            // تنبيه الحصص المتقدمة التي تتعدى 3 أيام مع استمرار الكود بدون إيقاف
             if (isMoreThan3DaysAhead(pDate)) {
                 let proceed = confirm(`⚠️ تنبيه: الحصة رقم (${i}) تاريخها أبعد من 3 أيام القادمة.\nهل ترغب في استمرار تحضيرها؟`);
                 if (!proceed) continue;
@@ -136,7 +151,7 @@ function createFullScheduleUI() {
 
             scheduleConfig[`p${i}`] = {
                 date: pDate,
-                lesson: document.getElementById(`lesson_p${i}`).value.trim(),
+                lesson: document.getElementById(`lesson_p${i}`).value,
                 enrichment: document.getElementById(`enrichment_p${i}`).value.trim()
             };
         }
@@ -169,16 +184,12 @@ function createFullScheduleUI() {
     });
 }
 
-/**
- * المحرك الآلي
- */
 function runAutomationEngine() {
     chrome.storage.local.get(['autoPrepRunning', 'scheduleConfig', 'currentPeriodIndex'], async (data) => {
         if (!data.autoPrepRunning) return;
 
         const currentUrl = window.location.href;
 
-        // 1. صفحة الجدول
         if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule")) {
             await delay(2500);
 
@@ -197,8 +208,6 @@ function runAutomationEngine() {
                 chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
             }
         }
-        
-        // 2. صفحة التحضير
         else if (currentUrl.includes("/LessonPrep") || currentUrl.includes("/PrepareLesson") || currentUrl.includes("/Lesson")) {
             await delay(2500);
 
@@ -209,7 +218,6 @@ function runAutomationEngine() {
             let autoLessonName = lessonTitleEl ? lessonTitleEl.innerText.trim() : "المقرر الدراسي";
             let finalLessonName = periodData.lesson || autoLessonName;
 
-            // تعبئة الأهداف
             let goalInputs = document.querySelectorAll('textarea, input[type="text"]');
             goalInputs.forEach(input => {
                 let parentText = input.parentElement ? input.parentElement.innerText : "";
@@ -222,7 +230,6 @@ function runAutomationEngine() {
 
             await delay(1000);
 
-            // القوائم المنسدلة
             let homeworkSet = false;
             let enrichmentSet = false;
 
@@ -244,7 +251,6 @@ function runAutomationEngine() {
 
             await delay(1000);
 
-            // توليد الواجب التلقائي
             if (!homeworkSet) {
                 let homeworkTextInputs = document.querySelectorAll('textarea, input[type="text"]');
                 homeworkTextInputs.forEach(input => {
@@ -257,7 +263,6 @@ function runAutomationEngine() {
                 });
             }
 
-            // توليد الإثراء التلقائي
             let finalEnrichmentUrl = periodData.enrichment || generateAutoEnrichmentUrl(finalLessonName);
             if (!enrichmentSet || periodData.enrichment) {
                 let urlInputs = document.querySelectorAll('input[type="url"], input[type="text"]');
