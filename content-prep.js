@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة علوم الصف الأول - عرض الحصص المتاحة فقط
+ * أداة علوم الصف الأول - دعم فصول (الصف الأول 1، 2، 3، 4...)
  * ===================================================
  */
 
@@ -18,31 +18,27 @@ function initPrepTool() {
 }
 
 /**
- * البحث عن أزرار إعداد الدرس لعلوم الصف الأول
+ * دالة جلب كروت حصص علوم الصف الأول الفعالة (بما فيها الصف الأول 1، 2، 4...)
  */
-function getGrade1ScienceButtons() {
-    let allPrepButtons = Array.from(document.querySelectorAll('a, button, div, span')).filter(el => {
-        const text = (el.innerText || el.textContent || "").trim();
-        const hasPrepText = text === "إعداد الدرس الآن" || (text.includes("إعداد الدرس الآن") && el.children.length <= 1);
-        const isVisible = el.offsetWidth > 0 && el.offsetHeight > 0 && window.getComputedStyle(el).display !== 'none';
-        return hasPrepText && isVisible;
-    });
+function getGrade1ScienceCards() {
+    // 1. البحث عن جميع العناصر الحاوية للكروت
+    let allElements = Array.from(document.querySelectorAll('div, a, button, td, .card, [class*="card"]'));
 
-    return allPrepButtons.filter(btn => {
-        let card = btn.closest('.card') || btn.closest('[class*="card"]') || btn.parentElement?.parentElement || btn.parentElement;
-        if (card) {
-            let cardText = card.innerText || card.textContent || "";
-            let isScience = cardText.includes("العلوم") || cardText.includes("علوم");
-            let isGrade1 = cardText.includes("الصف الأول") || cardText.includes("الأول") || cardText.includes("1");
-            return isScience && isGrade1;
-        }
-        return false;
+    return allElements.filter(el => {
+        let text = (el.innerText || el.textContent || "").trim();
+
+        // التثبت من وجود كلمة العلوم وتحديد الصف الأول مع اختلاف الرقم الملحق
+        let hasScience = text.includes("العلوم") || text.includes("علوم");
+        let hasGrade1 = text.includes("الصف الأول") || text.includes("الأول");
+        
+        // التثبت من أن العنصر مباشر (كارت حصة) وليس الصفحة بأكملها
+        let isCardElement = text.length < 150 && el.children.length <= 5;
+        let isVisible = el.offsetWidth > 0 && el.offsetHeight > 0 && window.getComputedStyle(el).display !== 'none';
+
+        return hasScience && hasGrade1 && isCardElement && isVisible;
     });
 }
 
-/**
- * إنشاء الواجهة ديناميكياً لعرض الحصص المطلوبة فقط
- */
 function createGrade1ScienceUI() {
     if (document.getElementById('prep-schedule-ui')) return;
 
@@ -63,7 +59,7 @@ function createGrade1ScienceUI() {
 
         <div style="margin-bottom:8px; display:flex; gap:6px;">
             <button id="btnFetchSchedule" style="flex:1; padding:6px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
-                🔄 تحديث الحصص المتاحة
+                🔄 قراءة الحصص المتاحة
             </button>
             <button id="btnSendWeeklyPlan" style="flex:1; padding:6px; background:#8b5cf6; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
                 📢 نشر الخطة الأسبوعية
@@ -71,7 +67,7 @@ function createGrade1ScienceUI() {
         </div>
 
         <div id="dynamicScheduleContainer">
-            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري البحث عن الحصص المتاحة للتحضير...</div>
+            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري البحث عن حصص العلوم للصف الأول...</div>
         </div>
 
         <div style="display:flex; gap:6px; align-items:center; margin-top:10px;">
@@ -82,7 +78,7 @@ function createGrade1ScienceUI() {
                 ⏹ إيقاف
             </button>
         </div>
-        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">اختر الدرس للحصة المتاحة ثم اضغط بدء التحضير</div>
+        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">اختر الدرس ثم اضغط بدء التحضير</div>
     `;
 
     document.body.appendChild(uiBox);
@@ -93,10 +89,6 @@ function createGrade1ScienceUI() {
 
     document.getElementById('btnFetchSchedule').addEventListener('click', () => {
         renderAvailableClasses();
-    });
-
-    document.getElementById('btnSendWeeklyPlan').addEventListener('click', () => {
-        sendWeeklyPlanToAnnouncements();
     });
 
     document.getElementById('btnStartBulkPrep').addEventListener('click', () => {
@@ -110,7 +102,7 @@ function createGrade1ScienceUI() {
         });
 
         if (!selectedAny && activeSelects.length > 0) {
-            alert("⚠️ يرجى اختيار درس للحصة المتاحة أولاً!");
+            alert("⚠️ يرجى اختيار درس مخصص للحصة أولاً!");
             return;
         }
 
@@ -135,19 +127,19 @@ function createGrade1ScienceUI() {
 }
 
 /**
- * بناء جدول الحصص المتاحة فقط
+ * دالة بناء جدول الحصص المتاحة (الصف الأول 1، 2، 4...)
  */
 function renderAvailableClasses() {
     const container = document.getElementById('dynamicScheduleContainer');
     const statusText = document.getElementById('prepStatusText');
     if (!container) return;
 
-    let availableButtons = getGrade1ScienceButtons();
+    let cards = getGrade1ScienceCards();
 
-    if (availableButtons.length === 0) {
+    if (cards.length === 0) {
         container.innerHTML = `
-            <div style="text-align:center; padding:15px; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#991b1b; font-size:11px;">
-                ⚠️ لا توجد حصص لعلوم الصف الأول بحاجة للتحضير حالياً في هذه الصفحة.
+            <div style="text-align:center; padding:12px; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#991b1b; font-size:11px;">
+                ⚠️ لم يتم العثور على حصص لعلوم الصف الأول في هذه الشاشة.
             </div>
         `;
         if (statusText) statusText.innerText = "لم يتم العثور على حصص متاحة";
@@ -169,18 +161,13 @@ function renderAvailableClasses() {
     });
 
     let rowsHTML = '';
-    availableButtons.forEach((btn, idx) => {
-        let card = btn.closest('.card') || btn.closest('[class*="card"]') || btn.parentElement?.parentElement;
-        let titleText = `حصة علوم مجهزة (${idx + 1})`;
-        if (card) {
-            let infoText = card.innerText.split('\n').filter(t => t.trim().length > 0).slice(0, 2).join(' - ');
-            if (infoText) titleText = infoText;
-        }
+    cards.forEach((card, idx) => {
+        let cardText = card.innerText.replace(/\n/g, ' - ').trim();
 
         rowsHTML += `
             <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding:6px; font-weight:bold; font-size:10px; color:#0369a1; width:35%;">${titleText}</td>
-                <td style="padding:4px; width:65%;">
+                <td style="padding:6px; font-weight:bold; font-size:10px; color:#0369a1; width:40%;">${cardText}</td>
+                <td style="padding:4px; width:60%;">
                     <select class="dynamic-lesson-select" id="lesson_p${idx + 1}" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; background:#fff;">
                         ${optionsHTML}
                     </select>
@@ -194,7 +181,7 @@ function renderAvailableClasses() {
             <thead>
                 <tr style="background:#f0f9ff; font-size:11px; color:#0369a1;">
                     <th style="padding:6px;">الحصة المتاحة</th>
-                    <th style="padding:6px;">درس العلوم المطلوب</th>
+                    <th style="padding:6px;">درس العلوم</th>
                 </tr>
             </thead>
             <tbody>
@@ -203,7 +190,7 @@ function renderAvailableClasses() {
         </table>
     `;
 
-    if (statusText) statusText.innerText = `تم العثور على (${availableButtons.length}) حصص متاحة للتحضير`;
+    if (statusText) statusText.innerText = `تم التعرف على (${cards.length}) حصص لعلوم الصف الأول!`;
 }
 
 function updateUIStatus(isRunning) {
@@ -214,43 +201,10 @@ function updateUIStatus(isRunning) {
     if (isRunning) {
         if (startBtn) startBtn.style.display = 'none';
         if (stopBtn) stopBtn.style.display = 'block';
-        if (statusText) statusText.innerText = "جاري تنفيذ التحضير آلياً للحصص المحددة... ⏳";
+        if (statusText) statusText.innerText = "جاري تنفيذ التحضير آلياً... ⏳";
     } else {
         if (startBtn) startBtn.style.display = 'block';
         if (stopBtn) stopBtn.style.display = 'none';
-    }
-}
-
-async function sendWeeklyPlanToAnnouncements() {
-    let statusText = document.getElementById('prepStatusText');
-    const currentUrl = window.location.href;
-
-    if (!currentUrl.includes("/Announcements") && !currentUrl.includes("/Announcement")) {
-        if (statusText) statusText.innerText = "جاري الانتقال لصفحة الإعلانات لإرسال الخطة... ⏳";
-        chrome.storage.local.set({ autoPublishPlan: true }, () => {
-            window.location.href = "https://schools.madrasati.sa/Teacher/Announcements";
-        });
-        return;
-    }
-
-    await delay(2000);
-    let titleInput = document.querySelector('input[name*="Title"], input[id*="Title"], #Title');
-    let detailsInput = document.querySelector('textarea[name*="Details"], textarea[id*="Details"], #Details');
-
-    if (titleInput && detailsInput) {
-        titleInput.value = "📌 خطة التعلم الأسبوعية - مادة العلوم (الصف الأول الابتدائي)";
-        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-        detailsInput.value = "أولياء الأمور والطلاب الكرام، مرفق لكم خطة التعلم الأسبوعية لمادة العلوم للصف الأول الابتدائي.";
-        detailsInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-        await delay(1000);
-        let publishBtn = document.querySelector('button[type="submit"], #btnSave, .btn-primary');
-        if (publishBtn) {
-            chrome.storage.local.set({ autoPublishPlan: false });
-            publishBtn.click();
-            alert("✅ تم نشر خطة التعلم الأسبوعية بنجاح!");
-        }
     }
 }
 
@@ -260,21 +214,28 @@ function runAutomationEngine() {
 
         const currentUrl = window.location.href;
 
+        // 1. الضغط على الكارت المباشر للحصة
         if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule") || !document.querySelector('select')) {
             await delay(1500);
 
-            let scienceButtons = getGrade1ScienceButtons();
+            let cards = getGrade1ScienceCards();
             let currentIndex = data.currentPeriodIndex || 0;
 
-            if (scienceButtons.length > currentIndex) {
+            if (cards.length > currentIndex) {
                 await delay(1000);
-                scienceButtons[currentIndex].click();
+
+                // البحث عن زر إعداد داخل الكارت أو الضغط على الكارت مباشرة
+                let innerBtn = cards[currentIndex].querySelector('a, button, div');
+                if (innerBtn) innerBtn.click();
+                else cards[currentIndex].click();
             } else {
-                alert("🎉 تم الانتهاء من تحضير الحصص المتاحة بنجاح!");
+                alert("🎉 تم الانتهاء من تحضير جميع الحصص المحددة بنجاح!");
                 chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
                 updateUIStatus(false);
             }
-        } else if (document.querySelector('select') && !document.querySelector('#btnSave, button[type="submit"]')) {
+        } 
+        // 2. الشاشة الأولى (تحديد المسار والدرس)
+        else if (document.querySelector('select') && !document.querySelector('#btnSave, button[type="submit"]')) {
             await delay(2000);
 
             let periodKey = `p${(data.currentPeriodIndex || 0) + 1}`;
@@ -307,7 +268,9 @@ function runAutomationEngine() {
             });
 
             if (nextBtn) nextBtn.click();
-        } else if (document.querySelector('textarea') || document.querySelector('button[type="submit"]') || document.querySelector('#btnSave')) {
+        } 
+        // 3. الشاشة الثانية (التكليفات والحفظ)
+        else if (document.querySelector('textarea') || document.querySelector('button[type="submit"]') || document.querySelector('#btnSave')) {
             await delay(2000);
 
             let addEnrichmentBtn = document.querySelector('button[id*="Enrichment"], .btn-add-enrichment');
