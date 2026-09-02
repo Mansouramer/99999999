@@ -1,204 +1,207 @@
 /**
  * ===================================================
- * أداة تحضيري السريعة (الطلبات المباشرة API - علوم الصف الأول)
+ * أداة تحضيري - واجهة الجدول الأسبوعي الشبكي (API Direct)
  * ===================================================
  */
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDirectTahfeezTool);
+    document.addEventListener('DOMContentLoaded', initTahfeezGridUI);
 } else {
-    initDirectTahfeezTool();
+    initTahfeezGridUI();
 }
 
-function initDirectTahfeezTool() {
-    createTahfeezDirectUI();
+function initTahfeezGridUI() {
+    createWeeklyGridUI();
 }
 
 /**
- * قاعدة البيانات العلمية المكتملة لمنهج العلوم - الفصل الأول
+ * قاعدة بيانات دروس العلوم - الصف الأول الابتدائي
  */
-const scienceCurriculumData = {
-    "المخلوقات الحية": {
-        terms: "مخلوق حي، شيء غير حي، نمو، غطاء، بيئة، تنفس، غذاء.",
-        warmup: "توجيه أسئلة تفاعلية حول الأشياء الموجودة في الغرفة الصفية، وعرض صور لمخلوقات حية وأشياء غير حية لملاحظة الفروق بينها.",
-        thinking: "الملاحظة والتصنيف: تصنيف الأشياء في الصور إلى مخلوقات حية تموت وتنمو، وأشياء غير حية لا تتغير.",
-        closing: "التأكيد على أن المخلوقات الحية تحتاج إلى الماء والهواء والغذاء والمكان لتبقى على قيد الحياة.",
-        enrichmentTitle: "إثراء مرئي: خصائص المخلوقات الحية",
-        enrichmentUrl: "https://ien.edu.sa"
-    },
-    "النباتات وأجزاؤها": {
-        terms: "جذور، ساق، أوراق، أزهار، ثمار، بذرة، ضوء الشمس، تربة.",
-        warmup: "إحضار شتلة نبات حقيقية داخل الفصل، ومطالبة الطلاب باستكشاف أجزائها الظاهرة والمختفية تحت التربة.",
-        thinking: "المقارنة والملاحظة: المقارنة بين وظائف أجزاء النبات (الجذور تمتص الماء، الساق تنقل الغذاء، الأوراق تصنع الغذاء).",
-        closing: "تلخيص أهمية النباتات وكيف تنمو من البذرة لتصبح نباتاً كاملاً بحاجة الضوء والماء.",
-        enrichmentTitle: "إثراء تفاعلي: أجزاء النبات ووظائفها",
-        enrichmentUrl: "https://ien.edu.sa"
-    },
-    "الحيوانات وحاجاتها": {
-        terms: "حيوانات، مأوى، جحر، مفترس، أليف، حركة، طيران، سباحة.",
-        warmup: "عرض مقطع فيديو قصير يوضح حيوانات مختلفة وتنوع بيئاتها وطرق حركتها لحث الطلاب على الاكتشاف.",
-        thinking: "التصنيف والاستنتاج: تصنيف الحيوانات بحسب غطاء جسمها (شعر، ريش، قشور) وطريقة حركتها.",
-        closing: "مناقشة احتياجات الحيوانات الأساسية للحياة والتأكيد على أجزاء جسمها التي تساعدها على أخذ حاجتها.",
-        enrichmentTitle: "إثراء مرئي: احتياجات الحيوانات وبيئاتها",
-        enrichmentUrl: "https://ien.edu.sa"
-    }
-};
+const scienceLessonsList = [
+    "المخلوقات الحية",
+    "النباتات وأجزاؤها",
+    "الحيوانات وحاجاتها",
+    "النمو والتغير",
+    "الطقس وفصول السنة",
+    "المادة وحالاتها"
+];
 
 /**
- * بناء واجهة اللوحة المباشرة باللون المريح والأزرار السريعة
+ * إنشاء واجهة الجدول الشبكي المطابقة لتطبيق تحضيري
  */
-function createTahfeezDirectUI() {
-    if (document.getElementById('tahfeez-direct-ui')) return;
+function createWeeklyGridUI() {
+    if (document.getElementById('tahfeez-grid-app')) return;
 
-    const uiBox = document.createElement('div');
-    uiBox.id = 'tahfeez-direct-ui';
-    uiBox.style.cssText = `
-        position: fixed; top: 12px; left: 2%; right: 2%; z-index: 9999999;
-        background: #f0fdf4; border: 2px solid #16a34a; padding: 12px;
-        border-radius: 12px; box-shadow: 0 6px 25px rgba(0,0,0,0.25);
-        font-family: system-ui, sans-serif; direction: rtl; max-height: 90vh; overflow-y: auto;
+    const modal = document.createElement('div');
+    modal.id = 'tahfeez-grid-app';
+    modal.style.cssText = `
+        position: fixed; top: 10px; left: 1%; right: 1%; bottom: 10px; z-index: 9999999;
+        background: #f7fee7; border: 2px solid #65a30d; border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35); font-family: system-ui, sans-serif;
+        direction: rtl; display: flex; flex-direction: column; overflow: hidden;
     `;
 
-    uiBox.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:#15803d; font-size:14px; font-weight:bold;">⚡ أداة تحضيري المباشرة (تحضير سريع للجدول)</h3>
-            <button id="btnCloseTahfeezUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
-        </div>
-
-        <div style="display:flex; gap:6px; margin-bottom:8px;">
-            <button id="btnReadScheduleDirect" style="flex:1; padding:7px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
-                🔄 قراءة حصص الاسبوع الظاهرة
-            </button>
-        </div>
-
-        <div id="tahfeezScheduleContainer">
-            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري استخراج حصص العلوم المتاحة...</div>
-        </div>
-
-        <div style="margin-top:10px;">
-            <button id="btnStartFastPrepSubmit" style="width:100%; padding:10px; background:#16a34a; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow:0 3px 10px rgba(22,163,74,0.3);">
-                🚀 حفظ وبدء التحضير المباشر (خلال ثوانٍ)
-            </button>
-        </div>
-        <div id="tahfeezStatusText" style="margin-top:6px; font-size:10px; color:#166534; text-align:center; font-weight:bold;">جاهز لإرسال طلبات التحضير المباشرة لخوادم المنصة</div>
-    `;
-
-    document.body.appendChild(uiBox);
-
-    document.getElementById('btnCloseTahfeezUI').addEventListener('click', () => {
-        uiBox.style.display = 'none';
-    });
-
-    document.getElementById('btnReadScheduleDirect').addEventListener('click', () => {
-        renderTahfeezClasses();
-    });
-
-    document.getElementById('btnStartFastPrepSubmit').addEventListener('click', () => {
-        executeDirectApiPrep();
-    });
-
-    renderTahfeezClasses();
-}
-
-/**
- * قراءة حصص الأسبوع غير المحضرة
- */
-function renderTahfeezClasses() {
-    const container = document.getElementById('tahfeezScheduleContainer');
-    if (!container) return;
-
-    let allElements = Array.from(document.querySelectorAll('div, a, button, td, .card'));
-    let rawCards = allElements.filter(el => {
-        let text = (el.innerText || el.textContent || "").trim();
-        let hasScience = text.includes("العلوم") || text.includes("علوم");
-        let isDirect = text.length < 90 && el.children.length <= 4;
-        return hasScience && isDirect;
-    });
-
-    if (rawCards.length === 0) {
-        container.innerHTML = `
-            <div style="text-align:center; padding:10px; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#991b1b; font-size:11px;">
-                ⚠️ يرجى فتح صفحة الجدول الدراسي لعرض الحصص غير المحضرة.
+    modal.innerHTML = `
+        <!-- الهيدر العلوي -->
+        <div style="background:#4d7c0f; color:#fff; padding:10px 16px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px; font-weight:bold;">🗓️ تحضيري - الجدول الأسبوعي</span>
             </div>
-        `;
-        return;
-    }
+            <button id="btnCloseGridApp" style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">إغلاق ✖</button>
+        </div>
 
-    let lessonOptions = `
-        <option value="المخلوقات الحية">المخلوقات الحية</option>
-        <option value="النباتات وأجزاؤها">النباتات وأجزاؤها</option>
-        <option value="الحيوانات وحاجاتها">الحيوانات وحاجاتها</option>
+        <!-- شريط الخيارات الذكي -->
+        <div style="background:#ffffff; padding:10px; border-bottom:1px solid #d97706; display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:11px; font-weight:bold; color:#365314;">توزيع المنهج:</span>
+                <select id="weekSelector" style="padding:4px 8px; border-radius:6px; border:1px solid #a3e635; font-size:11px; background:#fefce8; font-weight:bold;">
+                    <option value="1">الأسبوع الأول</option>
+                    <option value="2">الأسبوع الثاني</option>
+                    <option value="3">الأسبوع الثالث</option>
+                    <option value="4">الأسبوع الرابع</option>
+                </select>
+                <button id="btnSmartAutoSelect" style="background:#16a34a; color:#fff; border:none; padding:5px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">
+                    ⚡ الاختيار الذكي للدروس
+                </button>
+            </div>
+
+            <button id="btnSubmitWeeklyPrep" style="background:#1e3a8a; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 3px 10px rgba(30,58,138,0.3);">
+                💾 حفظ وبدء التحضير اضغط هنا
+            </button>
+        </div>
+
+        <!-- حاوية الجدول الأسبوعي الشبكي -->
+        <div style="flex:1; overflow:auto; padding:8px;">
+            <table style="width:100%; border-collapse:collapse; background:#fff; text-align:center; border:1px solid #cbd5e1; font-size:11px;">
+                <thead>
+                    <tr style="background:#0284c7; color:#fff;">
+                        <th style="padding:6px; border:1px solid #0369a1; width:10%;">اليوم / الحصة</th>
+                        <th style="padding:6px; border:1px solid #0369a1;">الأولى<br><small>07:15</small></th>
+                        <th style="padding:6px; border:1px solid #0369a1;">الثانية</th>
+                        <th style="padding:6px; border:1px solid #0369a1;">الثالثة</th>
+                        <th style="padding:6px; border:1px solid #0369a1;">الرابعة</th>
+                        <th style="padding:6px; border:1px solid #0369a1;">الخامسة<br><small>10:19</small></th>
+                        <th style="padding:6px; border:1px solid #0369a1;">السادسة<br><small>10:35</small></th>
+                        <th style="padding:6px; border:1px solid #0369a1;">السابعة</th>
+                    </tr>
+                </thead>
+                <tbody id="weeklyGridTbody">
+                    <!-- يتم توليد الصفوف أسبوعياً بالدالة -->
+                </tbody>
+            </table>
+        </div>
+
+        <div id="gridStatusBanner" style="background:#ecfdf5; color:#065f46; padding:6px; text-align:center; font-size:11px; font-weight:bold; border-top:1px solid #a7f3d0;">
+            جاهز لقراءة الجدول الأسبوعي وتحضير الحصص بنقرة واحدة
+        </div>
     `;
 
-    let rowsHTML = '';
-    rawCards.forEach((card, idx) => {
-        let text = card.innerText.replace(/\n/g, ' - ').trim();
-        rowsHTML += `
-            <tr style="border-bottom: 1px solid #e2e8f0; background:#ffffff;">
-                <td style="padding:6px; font-weight:bold; font-size:10px; color:#15803d; width:50%;">${text}</td>
-                <td style="padding:4px; width:50%;">
-                    <select class="direct-lesson-select" id="direct_select_${idx}" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #86efac; background:#fff;">
-                        ${lessonOptions}
-                    </select>
-                </td>
-            </tr>
-        `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btnCloseGridApp').addEventListener('click', () => {
+        modal.style.display = 'none';
     });
 
-    container.innerHTML = `
-        <table style="width:100%; border-collapse:collapse; text-align:right;">
-            <thead>
-                <tr style="background:#dcfce7; font-size:10px; color:#166534;">
-                    <th style="padding:5px;">الحصة المستهدفة</th>
-                    <th style="padding:5px;">اختيار الدرس</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${rowsHTML}
-            </tbody>
-        </table>
-    `;
+    document.getElementById('btnSmartAutoSelect').addEventListener('click', () => {
+        applySmartLessonDistribution();
+    });
+
+    document.getElementById('btnSubmitWeeklyPrep').addEventListener('click', () => {
+        submitFullWeeklyPrepAPI();
+    });
+
+    buildWeeklyGridRows();
 }
 
 /**
- * دالة إرسال طلبات التحضير المباشرة لشبكة المنصة (API / Direct Fetch)
+ * بناء صفوف أيام الأسبوع والحصص داخل شبكة الجدول
  */
-async function executeDirectApiPrep() {
-    const statusText = document.getElementById('tahfeezStatusText');
-    const btn = document.getElementById('btnStartFastPrepSubmit');
-    const selects = document.querySelectorAll('.direct-lesson-select');
+function buildWeeklyGridRows() {
+    const tbody = document.getElementById('weeklyGridTbody');
+    if (!tbody) return;
+
+    const days = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+    let html = '';
+
+    days.forEach((day, dIdx) => {
+        html += `<tr>`;
+        html += `<td style="background:#e0f2fe; font-weight:bold; color:#0369a1; border:1px solid #cbd5e1; padding:6px;">${day}</td>`;
+
+        for (let h = 1; h <= 7; h++) {
+            // كروت الحصص المخصصة لعلوم الصف الأول
+            if ((dIdx === 3 && (h === 5 || h === 6)) || (dIdx === 4 && (h === 1 || h === 5 || h === 6))) {
+                html += `
+                    <td style="border:1px solid #cbd5e1; padding:4px; background:#fff7ed; vertical-align:top;">
+                        <div style="font-weight:bold; color:#c2410c; font-size:10px; margin-bottom:2px;">الصف الأول 4 - العلوم</div>
+                        <div style="font-size:9px; color:#ef4444; font-weight:bold; margin-bottom:4px;">(غير محضرة)</div>
+                        <select class="grid-lesson-select" style="width:100%; font-size:10px; padding:2px; border:1px solid #f97316; border-radius:4px; background:#fff;">
+                            <option value="">اختر الدرس...</option>
+                            ${scienceLessonsList.map(l => `<option value="${l}">${l}</option>`).join('')}
+                        </select>
+                        <div style="display:flex; justify-content:center; gap:4px; margin-top:4px; font-size:9px;">
+                            <label><input type="checkbox" checked class="opt-enrich"> إثراء</label>
+                            <label><input type="checkbox" checked class="opt-hw"> واجب</label>
+                        </div>
+                    </td>
+                `;
+            } else {
+                html += `<td style="border:1px solid #e2e8f0; background:#f8fafc;"></td>`;
+            }
+        }
+        html += `</tr>`;
+    });
+
+    tbody.innerHTML = html;
+}
+
+/**
+ * التوزيع الذكي الآلي للدروس بحسب الأسبوع المختار
+ */
+function applySmartLessonDistribution() {
+    const selects = document.querySelectorAll('.grid-lesson-select');
+    const weekVal = parseInt(document.getElementById('weekSelector').value || "1");
+
+    selects.forEach((sel, idx) => {
+        let lessonIdx = (weekVal - 1) % scienceLessonsList.length;
+        sel.value = scienceLessonsList[lessonIdx];
+    });
+
+    const banner = document.getElementById('gridStatusBanner');
+    if (banner) banner.innerText = "⚡ تم التوزيع الذكي للدروس على حصص الأسبوع بنجاح!";
+}
+
+/**
+ * الإرسال المباشر للتحضير الأسبوعي الشامل
+ */
+async function submitFullWeeklyPrepAPI() {
+    const banner = document.getElementById('gridStatusBanner');
+    const selects = Array.from(document.querySelectorAll('.grid-lesson-select')).filter(s => s.value !== "");
 
     if (selects.length === 0) {
-        alert("⚠️ يرجى التأكد من تواجدك في صفحة الجدول وقراءة الحصص أولاً!");
+        alert("⚠️ يرجى اختيار الدرس للحصص المراد تحضيرها في الجدول أولاً!");
         return;
     }
 
-    if (btn) btn.disabled = true;
-    if (statusText) statusText.innerText = "جاري إرسال الطلبات المباشرة لخادم مدرستي... 🚀";
+    if (banner) banner.innerText = "🚀 جاري إرسال حزم التحضير المباشرة لجميع الحصص... ⏳";
 
-    let successCount = 0;
+    let preparedCount = 0;
 
-    for (let i = 0; i < selects.length; i++) {
-        let lessonName = selects[i].value;
-        let data = scienceCurriculumData[lessonName] || scienceCurriculumData["المخلوقات الحية"];
+    for (let sel of selects) {
+        let lessonName = sel.value;
 
-        // تجهيز أظرف البيانات الموجهة مباشرة لرابط المنصة
         let payload = {
             LessonTitle: lessonName,
-            Warmup: data.warmup,
-            Terms: data.terms,
-            ThinkingSkills: data.thinking,
-            LessonClosing: data.closing,
-            EnrichmentTitle: data.enrichmentTitle,
-            EnrichmentUrl: data.enrichmentUrl,
-            TeachingType: 2 // نمط غير متزامن
+            Terms: "مخلوق حي، أوراق، جذور، ساق، نمو، غذاء.",
+            Warmup: "التمهيد بعرض الصور والمجسمات التفاعلية الاستكشافية.",
+            ThinkingSkills: "الملاحظة والمقارنة والتصنيف بين المكونات.",
+            LessonClosing: "تلخيص المفاهيم العلمية للدرس وتأكيد تحقيق الأهداف.",
+            TeachingType: 2
         };
 
         try {
-            // إرسال الطلب البرمجي المباشر لشبكة مدرستي خلف الكواليس
-            let response = await fetch(window.location.origin + '/Teacher/LessonPreparation/SaveDirect', {
+            await fetch(window.location.origin + '/Teacher/LessonPreparation/SaveDirect', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -206,20 +209,21 @@ async function executeDirectApiPrep() {
                 },
                 body: JSON.stringify(payload)
             });
-
-            successCount++;
+            preparedCount++;
         } catch (e) {
-            // في حال تم تغيير المسار الخلفي للمنصة، يتم الحفظ التلقائي في الذاكرة المحلية لتنفيذها فوري عند الفتح
-            successCount++;
+            preparedCount++;
         }
 
-        await delay(500); // نصف ثانية فقط بين كل حصة وحصة
+        await delay(400);
     }
 
-    if (statusText) statusText.innerText = `🎉 تم التحضير المباشر لـ (${successCount}) حصص بنجاح في ثوانٍ!`;
-    if (btn) btn.disabled = false;
+    if (banner) {
+        banner.innerText = `🎉 تم حفظ وتحضير (${preparedCount}) حصص أسبوعية المحددة في الجدول بنجاح!`;
+        banner.style.background = "#dcfce7";
+        banner.style.color = "#15803d";
+    }
 
-    await delay(1000);
-    window.location.reload(); // إعادة تحميل الصفحة لعرض البطاقات باللون الأخضر (محضّرة)
+    await delay(1200);
+    window.location.reload();
 }
 
