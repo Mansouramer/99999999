@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة التحضير الذكية - نسخة التوافق مع الجوال
+ * أداة التحضير الذكية - حصر القراءة على الحصص اليومية الفعلية
  * ===================================================
  */
 
@@ -18,32 +18,41 @@ function initPrepTool() {
 }
 
 /**
- * دالة استخراج الحصص المحدثة لدعم بطاقات مدرستي للجوال
+ * دالة قراءة الحصص اليومية فقط ودون تكرار العناصر المخفية
  */
 async function extractScheduleFromPage() {
     let statusText = document.getElementById('prepStatusText');
-    if (statusText) statusText.innerText = "جاري قراءة الحصص من الواجهة... ⏳";
+    if (statusText) statusText.innerText = "جاري تصفية حصص اليوم فقط... ⏳";
 
-    await delay(1500);
+    await delay(1200);
 
-    // البحث عن أزرار الإعداد بالضبط كما تظهر في الصورة ("إعداد الدرس الآن")
-    let prepButtons = Array.from(document.querySelectorAll('a, button, div, span')).filter(el => {
+    // 1. تصفية العناصر ليقتصر البحث على الحصص المرئية فقط بصفحة اليوم
+    let allPrepButtons = Array.from(document.querySelectorAll('a, button, div, span')).filter(el => {
         const text = (el.innerText || el.textContent || "").trim();
-        return text.includes("إعداد الدرس الآن") || text.includes("قم بإعداد الدرس") || text.includes("إعداد الدرس");
+        // التأكد من أن العنصر هو زر نصي مباشر وليس كارت حاوي
+        const isDirectButton = text.includes("إعداد الدرس الآن") && el.children.length <= 1;
+        // التأكد من أن العنصر ظاهر فعلياً على الشاشة وليس مخفياً في الخلفية
+        const isVisible = el.offsetWidth > 0 && el.offsetHeight > 0 && window.getComputedStyle(el).display !== 'none';
+        return isDirectButton && isVisible;
     });
 
-    // تصفية العناصر لتجنب تكرار الأزرار الحاوية
-    let uniqueButtons = prepButtons.filter(btn => btn.children.length <= 2);
-
-    if (uniqueButtons.length === 0) {
-        if (statusText) statusText.innerText = "⚠️ لم يتم العثور على أزرار (إعداد الدرس الآن) في الصفحة.";
+    if (allPrepButtons.length === 0) {
+        if (statusText) statusText.innerText = "⚠️ لم يتم العثور على حصص بحاجة للتحضير اليوم.";
         return 0;
     }
 
-    uniqueButtons.forEach((btn, index) => {
+    // 2. إعادة إرساء القوائم المنسدلة في اللوحة
+    for (let i = 1; i <= 7; i++) {
+        let lessonSelect = document.getElementById(`lesson_p${i}`);
+        if (lessonSelect) {
+            lessonSelect.selectedIndex = 0; // إعادة التعيين للافتراضي
+        }
+    }
+
+    // 3. ربط الحصص الحقيقية بالجدول العائم
+    allPrepButtons.forEach((btn, index) => {
         if (index < 7) {
-            // صعود للبطاقة الأب للوصول لاسم المادة والصف (مثل: العلوم - الصف الأول)
-            let card = btn.closest('.card') || btn.parentElement?.parentElement || btn.parentElement;
+            let card = btn.closest('.card') || btn.closest('[class*="card"]') || btn.parentElement?.parentElement;
             let subjectName = "علوم";
 
             if (card) {
@@ -57,15 +66,15 @@ async function extractScheduleFromPage() {
             if (lessonSelect) {
                 let opt = document.createElement('option');
                 opt.value = subjectName;
-                opt.innerText = `📌 [سحب آلي]: حصة ${subjectName}`;
+                opt.innerText = `📌 [حصة اليوم]: ${subjectName}`;
                 opt.selected = true;
                 lessonSelect.appendChild(opt);
             }
         }
     });
 
-    if (statusText) statusText.innerText = `✅ تم التعرف على ${uniqueButtons.length} حصص إعداد الآن!`;
-    return uniqueButtons.length;
+    if (statusText) statusText.innerText = `✅ تم التعرف على ${allPrepButtons.length} حصص اليوم الفعالة فقط!`;
+    return allPrepButtons.length;
 }
 
 function createFullScheduleUI() {
@@ -119,7 +128,7 @@ function createFullScheduleUI() {
 
         <div style="margin-bottom:8px; text-align:right;">
             <button id="btnFetchSchedule" style="padding:6px 12px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
-                🔄 قراءة حصص الشاشة الآن
+                🔄 قراءة حصص اليوم الفعلية
             </button>
         </div>
         
@@ -138,7 +147,7 @@ function createFullScheduleUI() {
 
         <div style="display:flex; gap:10px; align-items:center;">
             <button id="btnStartBulkPrep" style="flex:1; padding:10px; background:#10b981; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">
-                🚀 بدء التحضير التلقائي للحصص الظاهرة
+                🚀 بدء التحضير التلقائي
             </button>
         </div>
         <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">جاهز للتحضير</div>
@@ -172,7 +181,6 @@ function createFullScheduleUI() {
         });
     });
 
-    // قراءة الحصص آلياً
     extractScheduleFromPage();
 }
 
@@ -182,14 +190,15 @@ function runAutomationEngine() {
 
         const currentUrl = window.location.href;
 
-        // 1. الضغط على زر إعداد الدرس الآن
         if (!currentUrl.includes("/LessonPrep") && !currentUrl.includes("/PrepareLesson") && !currentUrl.includes("/Lesson")) {
-            await delay(1500);
+            await delay(1200);
 
             let prepButtons = Array.from(document.querySelectorAll('a, button, div, span')).filter(el => {
                 const text = (el.innerText || el.textContent || "").trim();
-                return text.includes("إعداد الدرس الآن") || text.includes("قم بإعداد الدرس") || text.includes("إعداد الدرس");
-            }).filter(btn => btn.children.length <= 2);
+                const isDirectButton = text.includes("إعداد الدرس الآن") && el.children.length <= 1;
+                const isVisible = el.offsetWidth > 0 && el.offsetHeight > 0 && window.getComputedStyle(el).display !== 'none';
+                return isDirectButton && isVisible;
+            });
 
             let currentIndex = data.currentPeriodIndex || 0;
 
@@ -197,13 +206,11 @@ function runAutomationEngine() {
                 await delay(1000);
                 prepButtons[currentIndex].click();
             } else {
-                alert("🎉 تم الانتهاء من تحضير جميع الحصص المتاحة في الصفحة!");
+                alert("🎉 تم الانتهاء من تحضير جميع حصص اليوم بنجاح!");
                 chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
             }
-        }
-        
-        // 2. تعبئة صفحة تحضير الدرس
-        else {
+        } else {
+            // تنفيذ خطوات التحضير والتعبئة في الصفحة الداخلية
             await delay(2500);
 
             let periodKey = `p${(data.currentPeriodIndex || 0) + 1}`;
@@ -213,7 +220,6 @@ function runAutomationEngine() {
             let autoLessonName = lessonTitleEl ? lessonTitleEl.innerText.trim() : "المقرر الدراسي";
             let finalLessonName = periodData.lesson || autoLessonName;
 
-            // تعبئة الهدف
             let goalInputs = document.querySelectorAll('textarea, input[type="text"]');
             goalInputs.forEach(input => {
                 let parentText = input.parentElement ? input.parentElement.innerText : "";
@@ -226,7 +232,6 @@ function runAutomationEngine() {
 
             await delay(1000);
 
-            // القوائم المنسدلة
             let allSelects = document.querySelectorAll('select');
             allSelects.forEach(select => {
                 if (select.options.length > 1) {
@@ -237,7 +242,6 @@ function runAutomationEngine() {
 
             await delay(1500);
 
-            // حفظ
             chrome.storage.local.set({ currentPeriodIndex: (data.currentPeriodIndex || 0) + 1 });
 
             let saveButtons = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn')).filter(btn => {
