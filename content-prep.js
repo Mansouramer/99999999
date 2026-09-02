@@ -1,6 +1,6 @@
 /**
  * ===================================================
- * أداة علوم الصف الأول - التقيد بالحصص الظاهرة في الشاشة فقط
+ * أداة سحب الدروس التلقائية من شجرة المنصة (مدرستي)
  * ===================================================
  */
 
@@ -13,58 +13,40 @@ if (document.readyState === 'loading') {
 }
 
 function initPrepTool() {
-    createGrade1ScienceUI();
+    createScienceDynamicUI();
     runAutomationEngine();
 }
 
 /**
- * دالة للتحقق من أن العنصر ظاهر فعلياً على شاشة الجوال الحالية
+ * فحص الظهور الفعلي للكروت
  */
 function isElementVisibleOnScreen(el) {
     if (!el) return false;
     const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-        return false;
-    }
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
     const rect = el.getBoundingClientRect();
-    // التأكد من وجود مساحة حقيقية للعنصر
     return rect.width > 0 && rect.height > 0;
 }
 
 /**
- * جلب الحصص الظاهرة فقط في الشاشة الحالية وتجاهل المخبأة
+ * جلب حصص علوم الصف الأول الظاهرة على الشاشة
  */
 function getGrade1ScienceCards() {
-    // جلب العناصر الحاوية للكروت
     let allCards = Array.from(document.querySelectorAll('div, a, button, td, .card, [class*="card"]'));
 
-    let filteredCards = allCards.filter(el => {
+    return allCards.filter(el => {
         let text = (el.innerText || el.textContent || "").trim();
-
         let hasScience = text.includes("العلوم") || text.includes("علوم");
         let hasGrade1 = text.includes("الصف الأول") || text.includes("الأول");
-        
-        // اقتصار الفحص على بطاقة الحصة المباشرة
         let isDirectCard = text.length < 120 && el.children.length <= 4;
-        
-        // فحص الظهور الفعلي على الشاشة
-        let isVisible = isElementVisibleOnScreen(el);
-
-        return hasScience && hasGrade1 && isDirectCard && isVisible;
+        return hasScience && hasGrade1 && isDirectCard && isElementVisibleOnScreen(el);
     });
-
-    // إزالة التكرار الناتج عن الأنساب والأبناء
-    let uniqueCards = [];
-    filteredCards.forEach(card => {
-        if (!uniqueCards.some(existing => existing.contains(card) || card.contains(existing))) {
-            uniqueCards.push(card);
-        }
-    });
-
-    return uniqueCards;
 }
 
-function createGrade1ScienceUI() {
+/**
+ * الواجهة العائمة بدون قوائم دروس مسبقة
+ */
+function createScienceDynamicUI() {
     if (document.getElementById('prep-schedule-ui')) return;
 
     const uiBox = document.createElement('div');
@@ -78,13 +60,13 @@ function createGrade1ScienceUI() {
 
     uiBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 علوم الصف الأول (الحصص الظاهرة فقط)</h3>
+            <h3 style="margin:0; color:#0369a1; font-size:13px;">🔬 السحب والتحضير الآلي من المنصة</h3>
             <button id="btnCloseUI" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">إغلاق ✖</button>
         </div>
 
         <div style="margin-bottom:8px; display:flex; gap:6px;">
             <button id="btnFetchSchedule" style="flex:1; padding:6px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
-                🔄 قراءة الحصص الظاهرة حالياً
+                🔄 قراءة الحصص الظاهرة
             </button>
             <button id="btnSendWeeklyPlan" style="flex:1; padding:6px; background:#8b5cf6; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">
                 📢 نشر الخطة الأسبوعية
@@ -92,18 +74,18 @@ function createGrade1ScienceUI() {
         </div>
 
         <div id="dynamicScheduleContainer">
-            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">جاري قراءة الحصص المعروضة في الشاشة...</div>
+            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">سيتم سحب المنهج والدروس من المنصة تلقائياً أثناء التحضير...</div>
         </div>
 
         <div style="display:flex; gap:6px; align-items:center; margin-top:10px;">
             <button id="btnStartBulkPrep" style="flex:1; padding:10px; background:#10b981; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">
-                🚀 اعتماد الدرس وبدء التحضير
+                🚀 بدء السحب والتحضير الآلي
             </button>
             <button id="btnStopPrep" style="padding:10px; background:#ef4444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:none;">
                 ⏹ إيقاف
             </button>
         </div>
-        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">اختر الدرس ثم اضغط بدء التحضير</div>
+        <div id="prepStatusText" style="margin-top:6px; font-size:10px; color:#64748b; text-align:center;">جاهز لبدء السحب التلقائي من مدرستي</div>
     `;
 
     document.body.appendChild(uiBox);
@@ -116,24 +98,13 @@ function createGrade1ScienceUI() {
         renderAvailableClasses();
     });
 
+    document.getElementById('btnSendWeeklyPlan').addEventListener('click', () => {
+        sendWeeklyPlanToAnnouncements();
+    });
+
     document.getElementById('btnStartBulkPrep').addEventListener('click', () => {
-        let scheduleConfig = {};
-        let activeSelects = document.querySelectorAll('.dynamic-lesson-select');
-        let selectedAny = false;
-
-        activeSelects.forEach((sel, index) => {
-            if (sel.value) selectedAny = true;
-            scheduleConfig[`p${index + 1}`] = { lesson: sel.value };
-        });
-
-        if (!selectedAny && activeSelects.length > 0) {
-            alert("⚠️ يرجى اختيار درس مخصص للحصة أولاً!");
-            return;
-        }
-
         chrome.storage.local.set({
             autoPrepRunning: true,
-            scheduleConfig: scheduleConfig,
             currentPeriodIndex: 0
         }, () => {
             updateUIStatus(true);
@@ -151,9 +122,6 @@ function createGrade1ScienceUI() {
     renderAvailableClasses();
 }
 
-/**
- * عرض الحصص المعروضة فقط
- */
 function renderAvailableClasses() {
     const container = document.getElementById('dynamicScheduleContainer');
     const statusText = document.getElementById('prepStatusText');
@@ -164,39 +132,20 @@ function renderAvailableClasses() {
     if (cards.length === 0) {
         container.innerHTML = `
             <div style="text-align:center; padding:12px; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; color:#991b1b; font-size:11px;">
-                ⚠️ لم يتم العثور على حصص علوم مجهزة في الشاشة الحالية.
+                ⚠️ لا توجد حصص علوم مجهزة في الصفحة الحالية.
             </div>
         `;
-        if (statusText) statusText.innerText = "لا توجد حصص ظاهرة للتحضير";
+        if (statusText) statusText.innerText = "لم يتم العثور على حصص متاحة";
         return;
     }
-
-    const grade1ScienceLessons = [
-        "المخلوقات الحية وحاجاتها",
-        "النباتات وأجزاؤها",
-        "الفيزيائية والحركة",
-        "الطقس وفصول السنة",
-        "المادة وحالاتها",
-        "الأرض ومواردها"
-    ];
-
-    let optionsHTML = `<option value="">-- اختر درس العلوم --</option>`;
-    grade1ScienceLessons.forEach(lesson => {
-        optionsHTML += `<option value="${lesson}">${lesson}</option>`;
-    });
 
     let rowsHTML = '';
     cards.forEach((card, idx) => {
         let cardText = card.innerText.replace(/\n/g, ' - ').trim();
-
         rowsHTML += `
             <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding:6px; font-weight:bold; font-size:10px; color:#0369a1; width:45%;">${cardText}</td>
-                <td style="padding:4px; width:55%;">
-                    <select class="dynamic-lesson-select" id="lesson_p${idx + 1}" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #ccc; background:#fff;">
-                        ${optionsHTML}
-                    </select>
-                </td>
+                <td style="padding:6px; font-weight:bold; font-size:10px; color:#0369a1; width:50%;">${cardText}</td>
+                <td style="padding:6px; font-size:10px; color:#059669; width:50%;">📌 سحب تلقائي للدرس من المنصة</td>
             </tr>
         `;
     });
@@ -206,7 +155,7 @@ function renderAvailableClasses() {
             <thead>
                 <tr style="background:#f0f9ff; font-size:11px; color:#0369a1;">
                     <th style="padding:6px;">الحصة الظاهرة</th>
-                    <th style="padding:6px;">درس العلوم</th>
+                    <th style="padding:6px;">حالة السحب</th>
                 </tr>
             </thead>
             <tbody>
@@ -215,7 +164,7 @@ function renderAvailableClasses() {
         </table>
     `;
 
-    if (statusText) statusText.innerText = `تم التقيد بـ (${cards.length}) حصص معروضة في الصفحة حالياً!`;
+    if (statusText) statusText.innerText = `تم العثور على (${cards.length}) حصة قابلة للسحب والتحضير!`;
 }
 
 function updateUIStatus(isRunning) {
@@ -226,20 +175,56 @@ function updateUIStatus(isRunning) {
     if (isRunning) {
         if (startBtn) startBtn.style.display = 'none';
         if (stopBtn) stopBtn.style.display = 'block';
-        if (statusText) statusText.innerText = "جاري تنفيذ التحضير آلياً... ⏳";
+        if (statusText) statusText.innerText = "جاري سحب شجرة المنهج وتعبئة المحتوى... ⏳";
     } else {
         if (startBtn) startBtn.style.display = 'block';
         if (stopBtn) stopBtn.style.display = 'none';
     }
 }
 
+async function sendWeeklyPlanToAnnouncements() {
+    let statusText = document.getElementById('prepStatusText');
+    const currentUrl = window.location.href;
+
+    if (!currentUrl.includes("/Announcements") && !currentUrl.includes("/Announcement")) {
+        if (statusText) statusText.innerText = "جاري الانتقال لصفحة الإعلانات... ⏳";
+        chrome.storage.local.set({ autoPublishPlan: true }, () => {
+            window.location.href = "https://schools.madrasati.sa/Teacher/Announcements";
+        });
+        return;
+    }
+
+    await delay(2000);
+    let titleInput = document.querySelector('input[name*="Title"], input[id*="Title"], #Title');
+    let detailsInput = document.querySelector('textarea[name*="Details"], textarea[id*="Details"], #Details');
+
+    if (titleInput && detailsInput) {
+        titleInput.value = "📌 خطة التعلم الأسبوعية - مادة العلوم (الصف الأول الابتدائي)";
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        detailsInput.value = "أولياء الأمور والطلاب الكرام، مرفق لكم خطة التعلم الأسبوعية لمادة العلوم للصف الأول الابتدائي.";
+        detailsInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        await delay(1000);
+        let publishBtn = document.querySelector('button[type="submit"], #btnSave, .btn-primary');
+        if (publishBtn) {
+            chrome.storage.local.set({ autoPublishPlan: false });
+            publishBtn.click();
+            alert("✅ تم نشر الخطة الأسبوعية بنجاح!");
+        }
+    }
+}
+
+/**
+ * المحرك الآلي: السحب والتسلسل والتحضير
+ */
 function runAutomationEngine() {
-    chrome.storage.local.get(['autoPrepRunning', 'scheduleConfig', 'currentPeriodIndex'], async (data) => {
+    chrome.storage.local.get(['autoPrepRunning', 'currentPeriodIndex'], async (data) => {
         if (!data.autoPrepRunning) return;
 
         const currentUrl = window.location.href;
 
-        // 1. الضغط على الكارت
+        // 1. فتح كارت الحصة
         if (currentUrl.includes("/Schedule") || currentUrl.includes("/Teacher/Schedule") || !document.querySelector('select')) {
             await delay(1500);
 
@@ -248,44 +233,48 @@ function runAutomationEngine() {
 
             if (cards.length > currentIndex) {
                 await delay(1000);
-
                 let innerBtn = cards[currentIndex].querySelector('a, button, div');
                 if (innerBtn) innerBtn.click();
                 else cards[currentIndex].click();
             } else {
-                alert("🎉 تم الانتهاء من تحضير جميع الحصص المعروضة في الشاشة بنجاح!");
+                alert("🎉 تم الانتهاء من سحب وتحضير كافة الحصص الظاهرة بنجاح!");
                 chrome.storage.local.set({ autoPrepRunning: false, currentPeriodIndex: 0 });
                 updateUIStatus(false);
             }
         } 
-        // 2. الشاشة الأولى (المسار والدرس)
+        
+        // 2. الشاشة الأولى: سحب شجرة المنهج بالترتيب (الوحدة ⬅ الفصل ⬅ الدرس)
         else if (document.querySelector('select') && !document.querySelector('#btnSave, button[type="submit"]')) {
             await delay(2000);
 
-            let periodKey = `p${(data.currentPeriodIndex || 0) + 1}`;
-            let periodData = (data.scheduleConfig && data.scheduleConfig[periodKey]) ? data.scheduleConfig[periodKey] : {};
-
             let selects = document.querySelectorAll('select');
-            for (let sel of selects) {
-                if (periodData.lesson) {
-                    Array.from(sel.options).forEach((opt, idx) => {
-                        if (opt.text.includes(periodData.lesson)) {
-                            sel.selectedIndex = idx;
-                            sel.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                    });
-                } else if (sel.options.length > 1 && sel.selectedIndex === 0) {
-                    sel.selectedIndex = 1;
+            let detectedLessonName = "";
+
+            // خوض خيارات القوائم المنسدلة بالترتيب المساري لرفع الدرس
+            for (let i = 0; i < selects.length; i++) {
+                let sel = selects[i];
+                if (sel.options.length > 1 && sel.selectedIndex === 0) {
+                    sel.selectedIndex = 1; // اختيار أول وحدة/فصل/درس متاح
                     sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    await delay(800);
                 }
-                await delay(400);
+                
+                // قراءة اسم الدرس النشط المختار من القائمة الأخيرة
+                if (i === selects.length - 1 && sel.selectedIndex >= 0) {
+                    detectedLessonName = sel.options[sel.selectedIndex].text.trim();
+                }
             }
 
+            // حفظ اسم الدرس المسحوب لاستخدامه في الإثراءات والتكليفات
+            chrome.storage.local.set({ lastExtractedLesson: detectedLessonName });
+
+            // تحديد النمط: افتراضي غير متزامن
             let asyncRadio = document.querySelector('input[type="radio"][value*="غير متزامن"], input[type="radio"][id*="Async"]');
             if (asyncRadio) asyncRadio.click();
 
             await delay(1000);
 
+            // الضغط على زر "التالي"
             let nextBtn = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn')).find(b => {
                 const text = (b.innerText || b.textContent || "").trim();
                 return text.includes("التالي");
@@ -293,32 +282,39 @@ function runAutomationEngine() {
 
             if (nextBtn) nextBtn.click();
         } 
-        // 3. الشاشة الثانية (التكليفات والحفظ)
+        
+        // 3. الشاشة الثانية: تعبئة التكليفات والإثراءات بناءً على الدرس المسحوب ثم الحفظ
         else if (document.querySelector('textarea') || document.querySelector('button[type="submit"]') || document.querySelector('#btnSave')) {
             await delay(2000);
 
-            let addEnrichmentBtn = document.querySelector('button[id*="Enrichment"], .btn-add-enrichment');
-            if (addEnrichmentBtn) {
-                addEnrichmentBtn.click();
-                await delay(1000);
-            }
+            chrome.storage.local.get(['lastExtractedLesson'], async (stored) => {
+                let lessonName = stored.lastExtractedLesson || "العلوم";
 
-            let noteTextarea = document.querySelector('textarea');
-            if (noteTextarea) {
-                noteTextarea.value = "متابعة المهارات والتطبيقات العملية لدرس العلوم.";
-                noteTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+                // إضافة إثراء مدمج أو خارجي
+                let addEnrichmentBtn = document.querySelector('button[id*="Enrichment"], .btn-add-enrichment');
+                if (addEnrichmentBtn) {
+                    addEnrichmentBtn.click();
+                    await delay(1000);
+                }
 
-            await delay(1500);
+                // كتابة التعليمات بناءً على الدرس المسحوب
+                let noteTextarea = document.querySelector('textarea');
+                if (noteTextarea) {
+                    noteTextarea.value = `متابعة حل أنشطة وتطبيقات درس (${lessonName}) في كتاب الطالب.`;
+                    noteTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                }
 
-            chrome.storage.local.set({ currentPeriodIndex: (data.currentPeriodIndex || 0) + 1 });
+                await delay(1500);
 
-            let saveBtn = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn')).find(b => {
-                const text = (b.innerText || b.textContent || "").trim();
-                return text.includes("حفظ") || text.includes("إنهاء");
+                chrome.storage.local.set({ currentPeriodIndex: (data.currentPeriodIndex || 0) + 1 });
+
+                let saveBtn = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn')).find(b => {
+                    const text = (b.innerText || b.textContent || "").trim();
+                    return text.includes("حفظ") || text.includes("إنهاء");
+                });
+
+                if (saveBtn) saveBtn.click();
             });
-
-            if (saveBtn) saveBtn.click();
         }
     });
 }
